@@ -1,0 +1,53 @@
+{
+  "name": "image-slice-loader",
+  "version": "1.0.0",
+  "description": "a loader to slice long image & generate css",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "npm run build -w",
+    "build": "tsc -w"
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evont/image-slice-loader.git"
+  },
+  "keywords": [
+    "slice",
+    "image",
+    "webpack",
+    "image",
+    "loader",
+    "encode",
+    "image"
+  ],
+  "author": "EvontNg <evontgoh@foxmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/evont/image-slice-loader/issues"
+  },
+  "homepage": "https://github.com/evont/image-slice-loader#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.14.8",
+    "@babel/core": "^7.14.8",
+    "@babel/preset-env": "^7.14.8",
+    "webpack": "^5.47.1"
+  },
+  "dependencies": {
+    "image-size": "^1.0.0",
+    "imagemin": "^8.0.0",
+    "loader-utils": "^2.0.0",
+    "postcss": "^8.3.6",
+    "sharp": "^0.28.3"
+  },
+  "optionalDependencies": {
+    "imagemin-gifsicle": "^6.0.1",
+    "imagemin-mozjpeg": "^8.0.0",
+    "imagemin-optipng": "^7.1.0",
+    "imagemin-pngquant": "^8.0.0",
+    "imagemin-svgo": "^7.0.0",
+    "imagemin-webp": "^5.1.0"
+  }
+}

@@ -1,0 +1,32 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+#app {
+  long-bg: url(@assets/long-1.png) 375;
+  width: 375px;
+  height: 100vh;
+}
+
+#app2 {
+  long-bg:  url(@assets/long-2.jpeg) 200px;
+  display: flex;
+  align-items: center;
+  min-height: 900px;
+}
+
+@keyframes move {
+  from {
+    transform: translate3d(-100%, -50%, 0);
+  }
+  to {
+    transform: translate3d(-50%, -50%, 0);
+  }
+}
+#app3 {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate3d(-50%, -50%, 0);
+  animation:  move 1s linear;
+}
