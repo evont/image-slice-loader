@@ -40,6 +40,7 @@ var image_size_1 = require("image-size");
 var sharp = require("sharp");
 var path = require("path");
 var fs = require("fs-extra");
+var handlebars = require("handlebars");
 // enhanced-resolve/lib/AliasPlugin
 function startsWith(string, searchString) {
     var stringLength = string.length;
@@ -58,11 +59,12 @@ function startsWith(string, searchString) {
 }
 exports["default"] = (function (_a) {
     var loaderContext = _a.loaderContext, options = _a.options;
-    var property = options.property, slice = options.slice, blockFormate = options.blockFormate, name = options.name, outputPath = options.outputPath, clearOutput = options.clearOutput;
+    var property = options.property, slice = options.slice, blockFormate = options.blockFormate, name = options.name, outputPath = options.outputPath, clearOutput = options.clearOutput, template = options.template;
     var PostcssPlugin = function () {
         var reg = /url\(["']?(.*?)["']?\)\s*(?:(\d+)(?:px)?)?/;
         var compilerOptions = loaderContext._compiler.options;
         var _alias = compilerOptions.resolve.alias;
+        var _context = compilerOptions.context || loaderContext.rootContext;
         var alias = Object.keys(_alias).map(function (key) {
             var obj = _alias[key];
             var onlyModule = false;
@@ -82,6 +84,7 @@ exports["default"] = (function (_a) {
             return obj;
         });
         var realOutput = outputPath;
+        // if output path is match alias, transform into alias path
         for (var _i = 0, alias_1 = alias; _i < alias_1.length; _i++) {
             var item = alias_1[_i];
             if (outputPath === item.name ||
@@ -91,6 +94,10 @@ exports["default"] = (function (_a) {
                     realOutput = item.alias + outputPath.substr(item.name.length);
                 }
             }
+        }
+        // if not alias or not absolute path, transform into path relate to webpack context
+        if (!path.isAbsolute(realOutput)) {
+            realOutput = path.resolve(_context, realOutput);
         }
         if (clearOutput) {
             try {
@@ -104,7 +111,7 @@ exports["default"] = (function (_a) {
             postcssPlugin: "image-slice-parser",
             Declaration: function (decl) {
                 return __awaiter(this, void 0, void 0, function () {
-                    var cap, bgWidth_1, url_1, urlParse_1, filePath_1, err_1, fileExt_1, dimension, heights_1, imgHeight, imgWidth_1, marginTop_1, bgs_1, temp;
+                    var cap, bgWidth_1, url_1, urlParse_1, filePath_1, err_1, fileExt_1, dimension, heights_1, imgHeight, imgWidth_1, marginTop_1, bgs_1, templatePath, _template, localCss;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
@@ -187,6 +194,7 @@ exports["default"] = (function (_a) {
                                                     height: _bgHeight,
                                                     width: _bgWidth,
                                                     ind: ind,
+                                                    isLast: ind === heights_1.length - 1,
                                                     url: path.join(outputPath, itemBase)
                                                 });
                                                 if (bgs_1.length === heights_1.length)
@@ -197,17 +205,20 @@ exports["default"] = (function (_a) {
                                     })];
                             case 7:
                                 _a.sent();
-                                temp = bgs_1
-                                    .sort(function (a, b) { return a.ind - b.ind; })
-                                    .map(function (bg) {
-                                    var height = bg.height, width = bg.width, top = bg.top, url = bg.url;
-                                    return "no-repeat center " + top + "px/" + width + "px " + height + "px url(\"" + url + "\")";
-                                })
-                                    .join(",");
-                                decl.replaceWith({
-                                    prop: "background",
-                                    value: temp
-                                });
+                                bgs_1.sort(function (a, b) { return a.ind - b.ind; });
+                                templatePath = path.resolve(__dirname, "../../template.hbs");
+                                if (template) {
+                                    if (path.isAbsolute(template)) {
+                                        templatePath = template;
+                                    }
+                                    else {
+                                        templatePath = path.resolve(_context, template);
+                                    }
+                                }
+                                _template = handlebars.compile(fs.readFileSync(templatePath, 'utf-8'));
+                                localCss = _template({ bgs: bgs_1 });
+                                decl.after(localCss);
+                                decl.remove();
                                 _a.label = 8;
                             case 8: return [2 /*return*/];
                         }

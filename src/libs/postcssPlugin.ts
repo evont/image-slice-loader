@@ -3,6 +3,7 @@ import sizeOf from "image-size";
 import * as sharp from "sharp";
 import * as path from "path";
 import * as fs from "fs-extra";
+import * as handlebars from "handlebars";
 import { PluginOptions } from "../type";
 import { ISizeCalculationResult } from "image-size/dist/types/interface";
 
@@ -25,12 +26,14 @@ function startsWith(string, searchString) {
 }
 
 export default ({ loaderContext, options }: PluginOptions) => {
-  let { property, slice, blockFormate, name, outputPath, clearOutput } = options;
+  let { property, slice, blockFormate, name, outputPath, clearOutput, template } = options;
   const PostcssPlugin: PluginCreator<{}> = function () {
     const reg = /url\(["']?(.*?)["']?\)\s*(?:(\d+)(?:px)?)?/;
 
     const compilerOptions = loaderContext._compiler.options;
     const _alias = compilerOptions.resolve.alias;
+    const _context = compilerOptions.context || loaderContext.rootContext;
+
     const alias = Object.keys(_alias).map((key) => {
       let obj = _alias[key];
       let onlyModule = false;
@@ -54,6 +57,7 @@ export default ({ loaderContext, options }: PluginOptions) => {
     });
 
     let realOutput = outputPath;
+    // if output path is match alias, transform into alias path
     for (const item of alias) {
       if (
         outputPath === item.name ||
@@ -67,6 +71,11 @@ export default ({ loaderContext, options }: PluginOptions) => {
         }
       }
     }
+    // if not alias or not absolute path, transform into path relate to webpack context
+    if (!path.isAbsolute(realOutput)) {
+      realOutput = path.resolve(_context, realOutput)
+    }
+
     if (clearOutput) {
       try {
         fs.removeSync(realOutput)
@@ -121,7 +130,7 @@ export default ({ loaderContext, options }: PluginOptions) => {
             }
           }
           let marginTop = 0;
-          const bgs = [];
+          let bgs = [];
           await new Promise<void>((resolve) => {
             const mtMap = new Map();
             heights.forEach((height, ind) => {
@@ -151,6 +160,7 @@ export default ({ loaderContext, options }: PluginOptions) => {
                     height: _bgHeight,
                     width: _bgWidth,
                     ind,
+                    isLast: ind === heights.length - 1,
                     url: path.join(outputPath, itemBase),
                   });
                   if (bgs.length === heights.length) resolve();
@@ -158,17 +168,19 @@ export default ({ loaderContext, options }: PluginOptions) => {
               marginTop += height;
             });
           });
-          const temp = bgs
-            .sort((a, b) => a.ind - b.ind)
-            .map((bg) => {
-              const { height, width, top, url } = bg;
-              return `no-repeat center ${top}px/${width}px ${height}px url("${url}")`;
-            })
-            .join(",");
-          decl.replaceWith({
-            prop: "background",
-            value: temp,
-          });
+          bgs.sort((a, b) => a.ind - b.ind);
+          let templatePath = path.resolve(__dirname, "../../template.hbs")
+          if (template) {
+            if (path.isAbsolute(template)) {
+              templatePath = template;
+            } else {
+              templatePath = path.resolve(_context, template);
+            }
+          }
+          const _template = handlebars.compile(fs.readFileSync(templatePath, 'utf-8'));
+          const localCss = _template({ bgs });
+          decl.after(localCss);
+          decl.remove();
         }
       },
     };

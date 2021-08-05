@@ -1,0 +1,4 @@
+background-repeat: no-repeat; 
+background-position: {{#each bgs}}center {{top}}px{{#if isLast}}{{else}},{{/if}} {{/each}};
+background-size: {{#each bgs}}{{width}}px {{height}}px{{#if isLast}}{{else}},{{/if}}{{/each}};
+background-image: {{#each bgs}}url({{url}}){{#if isLast}}{{else}},{{/if}}{{/each}};

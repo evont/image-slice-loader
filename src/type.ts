@@ -5,6 +5,7 @@ export interface LoaderOptions {
   outputPath?: string;
   clearOutput?: boolean;
   name?: string;
+  template?: string;
   blockFormate?: (name: string, index: number) => string;
 }
 export interface PluginOptions {

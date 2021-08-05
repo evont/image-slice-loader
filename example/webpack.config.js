@@ -35,7 +35,8 @@ module.exports = {
           {
             loader: "image-slice-loader",
             options: {
-              outputPath: "@assets/slice"
+              outputPath: "@assets/slice",
+              template: "./src/template.hbs"
             }
           },
         ],

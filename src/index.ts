@@ -49,5 +49,3 @@ export default function loader(source, meta) {
     callback(error);
   });
 }
-
-export { default as Plugin } from "./Plugin";
