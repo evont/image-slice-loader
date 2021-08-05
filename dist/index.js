@@ -27,7 +27,9 @@ function mergeOptions(options) {
         name: "[name]-[contenthash].[ext]",
         blockFormate: function (name, index) {
             return name + "__block__" + index;
-        }
+        },
+        clearOutput: true,
+        outputPath: "./slice"
     }, options);
 }
 function loader(source, meta) {

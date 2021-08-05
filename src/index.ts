@@ -27,7 +27,9 @@ function mergeOptions(options: LoaderOptions): LoaderOptions {
     name: "[name]-[contenthash].[ext]",
     blockFormate: (name, index) => {
       return `${name}__block__${index}`;
-    }
+    },
+    clearOutput: true,
+    outputPath: "./slice"
   }, options)
 }
 export default function loader(source, meta) {

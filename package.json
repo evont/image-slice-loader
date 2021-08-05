@@ -36,6 +36,7 @@
     "webpack": "^5.47.1"
   },
   "dependencies": {
+    "fs-extra": "^10.0.0",
     "image-size": "^1.0.0",
     "imagemin": "^8.0.0",
     "loader-utils": "^2.0.0",

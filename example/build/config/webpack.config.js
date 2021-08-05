@@ -1,25 +1,24 @@
 const path = require("path");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const ImageSlicePlugin = require("../dist").Plugin;
 
+console.log(path.resolve(process.cwd(), "../dist"));
 module.exports = {
   mode: "production",
-  entry: "./src/index.js",
+  entry: path.resolve(process.cwd(), "./src/index.js"),
   output: {
-    path: path.resolve(__dirname, "dist"),
+    path: path.resolve(process.cwd(), "./dist"),
     publicPath: "./"
   },
   resolveLoader: {
     alias: {
-      "image-slice-loader": path.resolve(__dirname, "../dist"),
+      "image-slice-loader": path.resolve(process.cwd(), "../dist"),
     },
   },
   resolve: {
     alias: {
-      '@assets': path.resolve("./src/assets"),
-      '@': path.resolve("./src"),
-      '_$': path.resolve("./src")
+      '@assets': path.resolve(process.cwd(), "./src/assets"),
+      '@': path.resolve(process.cwd(), "./src")
     }
   },
   // watch: true,
@@ -35,7 +34,7 @@ module.exports = {
           {
             loader: "image-slice-loader",
             options: {
-              outputPath: "@assets/slice"
+              outputPath: "@assets/"
             }
           },
         ],
@@ -44,7 +43,10 @@ module.exports = {
       //   test: /\.(png|jpe?g|webp|git|svg|)$/i,
       //   use: [
       //     {
-      //       loader: 'url-loader',
+      //       loader: 'image-slice-loader',
+      //       options: {
+      //         slices: 300
+      //       }
       //     },
       //   ],
       // },
@@ -53,7 +55,7 @@ module.exports = {
   plugins: [
     new MiniCssExtractPlugin(),
     new HtmlWebpackPlugin({
-      template: "./public/index.html"
+      template: path.resolve(process.cwd(), "./public/index.html")
     })
   ],
 };

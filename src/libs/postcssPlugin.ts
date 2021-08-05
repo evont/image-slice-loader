@@ -2,15 +2,79 @@ import { PluginCreator } from "postcss";
 import sizeOf from "image-size";
 import * as sharp from "sharp";
 import * as path from "path";
-import { interpolateName } from "loader-utils";
-
+import * as fs from "fs-extra";
 import { PluginOptions } from "../type";
 import { ISizeCalculationResult } from "image-size/dist/types/interface";
 
+// enhanced-resolve/lib/AliasPlugin
+function startsWith(string, searchString) {
+  const stringLength = string.length;
+  const searchLength = searchString.length;
+
+  // early out if the search length is greater than the search string
+  if (searchLength > stringLength) {
+    return false;
+  }
+  let index = -1;
+  while (++index < searchLength) {
+    if (string.charCodeAt(index) !== searchString.charCodeAt(index)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export default ({ loaderContext, options }: PluginOptions) => {
-  let { property, slice, blockFormate, name, outputPath } = options;
+  let { property, slice, blockFormate, name, outputPath, clearOutput } = options;
   const PostcssPlugin: PluginCreator<{}> = function () {
     const reg = /url\(["']?(.*?)["']?\)\s*(?:(\d+)(?:px)?)?/;
+
+    const compilerOptions = loaderContext._compiler.options;
+    const _alias = compilerOptions.resolve.alias;
+    const alias = Object.keys(_alias).map((key) => {
+      let obj = _alias[key];
+      let onlyModule = false;
+      if (/\$$/.test(key)) {
+        onlyModule = true;
+        key = key.substr(0, key.length - 1);
+      }
+      if (typeof obj === "string") {
+        obj = {
+          alias: obj,
+        };
+      }
+      obj = Object.assign(
+        {
+          name: key,
+          onlyModule,
+        },
+        obj
+      );
+      return obj;
+    });
+
+    let realOutput = outputPath;
+    for (const item of alias) {
+      if (
+        outputPath === item.name ||
+        (!item.onlyModule && startsWith(outputPath, item.name + "/"))
+      ) {
+        if (
+          outputPath !== item.alias &&
+          !startsWith(outputPath, `${item.alias}/`)
+        ) {
+          realOutput = item.alias + outputPath.substr(item.name.length);
+        }
+      }
+    }
+    if (clearOutput) {
+      try {
+        fs.removeSync(realOutput)
+      } catch(e) {
+        void e;
+      }
+    }
+
     return {
       postcssPlugin: "image-slice-parser",
       async Declaration(decl) {
@@ -19,11 +83,24 @@ export default ({ loaderContext, options }: PluginOptions) => {
           const bgWidth: number = +(cap[2] || 0);
           const url = cap[1];
           const urlParse = path.parse(url);
-          const filePath = await new Promise<string>((resolve, reject) =>
-            loaderContext.resolve(loaderContext.context, url, (err, result) =>
-              err ? reject(err) : resolve(result)
-            )
-          );
+          let filePath;
+
+          
+          await fs.ensureDir(realOutput);
+
+          try {
+            filePath = await new Promise<string>((resolve, reject) =>
+              loaderContext.resolve(loaderContext.context, url, (err, result) =>
+                err ? reject(err) : resolve(result)
+              )
+            );
+          } catch (err) {
+            // TODO: update error handler
+            console.error("url invalid");
+          }
+          if (!filePath) return;
+
+          const fileExt = path.extname(filePath);
           const dimension = await new Promise<ISizeCalculationResult>(
             (resolve) => {
               sizeOf(filePath, (err, ds) => {
@@ -31,7 +108,6 @@ export default ({ loaderContext, options }: PluginOptions) => {
               });
             }
           );
-
           const heights = [];
           let imgHeight = dimension.height;
           let imgWidth = dimension.width;
@@ -50,18 +126,8 @@ export default ({ loaderContext, options }: PluginOptions) => {
             const mtMap = new Map();
             heights.forEach((height, ind) => {
               const itemName = blockFormate(urlParse.name, ind);
-              const itemBase = `${itemName}${urlParse.ext}`;
-              const urlPath = path.format(
-                Object.assign({}, urlParse, {
-                  dir: path.posix.join(urlParse.dir, "slice"),
-                  name: itemName,
-                  base: itemBase,
-                })
-              );
-              const resultPath = path.resolve(
-                path.posix.join(path.parse(filePath).dir, "slice"),
-                itemBase
-              );
+              const itemBase = `${itemName}${fileExt}`;
+              const resultPath = path.resolve(realOutput, itemBase);
               mtMap.set(ind, marginTop);
               sharp(filePath)
                 .extract({
@@ -85,7 +151,7 @@ export default ({ loaderContext, options }: PluginOptions) => {
                     height: _bgHeight,
                     width: _bgWidth,
                     ind,
-                    url: urlPath,
+                    url: path.join(outputPath, itemBase),
                   });
                   if (bgs.length === heights.length) resolve();
                 });

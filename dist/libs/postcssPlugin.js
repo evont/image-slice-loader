@@ -39,37 +39,109 @@ exports.__esModule = true;
 var image_size_1 = require("image-size");
 var sharp = require("sharp");
 var path = require("path");
+var fs = require("fs-extra");
+// enhanced-resolve/lib/AliasPlugin
+function startsWith(string, searchString) {
+    var stringLength = string.length;
+    var searchLength = searchString.length;
+    // early out if the search length is greater than the search string
+    if (searchLength > stringLength) {
+        return false;
+    }
+    var index = -1;
+    while (++index < searchLength) {
+        if (string.charCodeAt(index) !== searchString.charCodeAt(index)) {
+            return false;
+        }
+    }
+    return true;
+}
 exports["default"] = (function (_a) {
     var loaderContext = _a.loaderContext, options = _a.options;
-    var property = options.property, slice = options.slice, blockFormate = options.blockFormate, name = options.name, outputPath = options.outputPath;
+    var property = options.property, slice = options.slice, blockFormate = options.blockFormate, name = options.name, outputPath = options.outputPath, clearOutput = options.clearOutput;
     var PostcssPlugin = function () {
         var reg = /url\(["']?(.*?)["']?\)\s*(?:(\d+)(?:px)?)?/;
+        var compilerOptions = loaderContext._compiler.options;
+        var _alias = compilerOptions.resolve.alias;
+        var alias = Object.keys(_alias).map(function (key) {
+            var obj = _alias[key];
+            var onlyModule = false;
+            if (/\$$/.test(key)) {
+                onlyModule = true;
+                key = key.substr(0, key.length - 1);
+            }
+            if (typeof obj === "string") {
+                obj = {
+                    alias: obj
+                };
+            }
+            obj = Object.assign({
+                name: key,
+                onlyModule: onlyModule
+            }, obj);
+            return obj;
+        });
+        var realOutput = outputPath;
+        for (var _i = 0, alias_1 = alias; _i < alias_1.length; _i++) {
+            var item = alias_1[_i];
+            if (outputPath === item.name ||
+                (!item.onlyModule && startsWith(outputPath, item.name + "/"))) {
+                if (outputPath !== item.alias &&
+                    !startsWith(outputPath, item.alias + "/")) {
+                    realOutput = item.alias + outputPath.substr(item.name.length);
+                }
+            }
+        }
+        if (clearOutput) {
+            try {
+                fs.removeSync(realOutput);
+            }
+            catch (e) {
+                void e;
+            }
+        }
         return {
             postcssPlugin: "image-slice-parser",
             Declaration: function (decl) {
                 return __awaiter(this, void 0, void 0, function () {
-                    var cap, bgWidth_1, url_1, urlParse_1, filePath_1, dimension, heights_1, imgHeight, imgWidth_1, marginTop_1, bgs_1, temp;
+                    var cap, bgWidth_1, url_1, urlParse_1, filePath_1, err_1, fileExt_1, dimension, heights_1, imgHeight, imgWidth_1, marginTop_1, bgs_1, temp;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
-                                if (!(decl.prop === property)) return [3 /*break*/, 4];
+                                if (!(decl.prop === property)) return [3 /*break*/, 8];
                                 cap = reg.exec(decl.value);
                                 bgWidth_1 = +(cap[2] || 0);
                                 url_1 = cap[1];
                                 urlParse_1 = path.parse(url_1);
+                                return [4 /*yield*/, fs.ensureDir(realOutput)];
+                            case 1:
+                                _a.sent();
+                                _a.label = 2;
+                            case 2:
+                                _a.trys.push([2, 4, , 5]);
                                 return [4 /*yield*/, new Promise(function (resolve, reject) {
                                         return loaderContext.resolve(loaderContext.context, url_1, function (err, result) {
                                             return err ? reject(err) : resolve(result);
                                         });
                                     })];
-                            case 1:
+                            case 3:
                                 filePath_1 = _a.sent();
+                                return [3 /*break*/, 5];
+                            case 4:
+                                err_1 = _a.sent();
+                                // TODO: update error handler
+                                console.error("url invalid");
+                                return [3 /*break*/, 5];
+                            case 5:
+                                if (!filePath_1)
+                                    return [2 /*return*/];
+                                fileExt_1 = path.extname(filePath_1);
                                 return [4 /*yield*/, new Promise(function (resolve) {
                                         image_size_1["default"](filePath_1, function (err, ds) {
                                             resolve(ds);
                                         });
                                     })];
-                            case 2:
+                            case 6:
                                 dimension = _a.sent();
                                 heights_1 = [];
                                 imgHeight = dimension.height;
@@ -90,13 +162,8 @@ exports["default"] = (function (_a) {
                                         var mtMap = new Map();
                                         heights_1.forEach(function (height, ind) {
                                             var itemName = blockFormate(urlParse_1.name, ind);
-                                            var itemBase = "" + itemName + urlParse_1.ext;
-                                            var urlPath = path.format(Object.assign({}, urlParse_1, {
-                                                dir: path.posix.join(urlParse_1.dir, "slice"),
-                                                name: itemName,
-                                                base: itemBase
-                                            }));
-                                            var resultPath = path.resolve(path.posix.join(path.parse(filePath_1).dir, "slice"), itemBase);
+                                            var itemBase = "" + itemName + fileExt_1;
+                                            var resultPath = path.resolve(realOutput, itemBase);
                                             mtMap.set(ind, marginTop_1);
                                             sharp(filePath_1)
                                                 .extract({
@@ -120,7 +187,7 @@ exports["default"] = (function (_a) {
                                                     height: _bgHeight,
                                                     width: _bgWidth,
                                                     ind: ind,
-                                                    url: urlPath
+                                                    url: path.join(outputPath, itemBase)
                                                 });
                                                 if (bgs_1.length === heights_1.length)
                                                     resolve();
@@ -128,7 +195,7 @@ exports["default"] = (function (_a) {
                                             marginTop_1 += height;
                                         });
                                     })];
-                            case 3:
+                            case 7:
                                 _a.sent();
                                 temp = bgs_1
                                     .sort(function (a, b) { return a.ind - b.ind; })
@@ -141,8 +208,8 @@ exports["default"] = (function (_a) {
                                     prop: "background",
                                     value: temp
                                 });
-                                _a.label = 4;
-                            case 4: return [2 /*return*/];
+                                _a.label = 8;
+                            case 8: return [2 /*return*/];
                         }
                     });
                 });
