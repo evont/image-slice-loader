@@ -41,56 +41,24 @@ var sharp = require("sharp");
 var path = require("path");
 var fs = require("fs-extra");
 var handlebars = require("handlebars");
-// enhanced-resolve/lib/AliasPlugin
-function startsWith(string, searchString) {
-    var stringLength = string.length;
-    var searchLength = searchString.length;
-    // early out if the search length is greater than the search string
-    if (searchLength > stringLength) {
-        return false;
-    }
-    var index = -1;
-    while (++index < searchLength) {
-        if (string.charCodeAt(index) !== searchString.charCodeAt(index)) {
-            return false;
-        }
-    }
-    return true;
-}
+var util_1 = require("./util");
 exports["default"] = (function (_a) {
     var loaderContext = _a.loaderContext, options = _a.options;
-    var property = options.property, slice = options.slice, blockFormate = options.blockFormate, name = options.name, outputPath = options.outputPath, clearOutput = options.clearOutput, template = options.template;
+    var property = options.property, blockFormate = options.blockFormate, outputPath = options.outputPath, clearOutput = options.clearOutput, template = options.template;
     var PostcssPlugin = function () {
-        var reg = /url\(["']?(.*?)["']?\)\s*(?:(\d+)(?:px)?)?/;
+        var reg = /url\(["']?(.*?)["']?\)/;
         var compilerOptions = loaderContext._compiler.options;
         var _alias = compilerOptions.resolve.alias;
         var _context = compilerOptions.context || loaderContext.rootContext;
-        var alias = Object.keys(_alias).map(function (key) {
-            var obj = _alias[key];
-            var onlyModule = false;
-            if (/\$$/.test(key)) {
-                onlyModule = true;
-                key = key.substr(0, key.length - 1);
-            }
-            if (typeof obj === "string") {
-                obj = {
-                    alias: obj
-                };
-            }
-            obj = Object.assign({
-                name: key,
-                onlyModule: onlyModule
-            }, obj);
-            return obj;
-        });
+        var alias = util_1.transformAlias(_alias);
         var realOutput = outputPath;
         // if output path is match alias, transform into alias path
         for (var _i = 0, alias_1 = alias; _i < alias_1.length; _i++) {
             var item = alias_1[_i];
             if (outputPath === item.name ||
-                (!item.onlyModule && startsWith(outputPath, item.name + "/"))) {
+                (!item.onlyModule && util_1.startsWith(outputPath, item.name + "/"))) {
                 if (outputPath !== item.alias &&
-                    !startsWith(outputPath, item.alias + "/")) {
+                    !util_1.startsWith(outputPath, item.alias + "/")) {
                     realOutput = item.alias + outputPath.substr(item.name.length);
                 }
             }
@@ -110,32 +78,45 @@ exports["default"] = (function (_a) {
         return {
             postcssPlugin: "image-slice-parser",
             Declaration: function (decl) {
+                var _a;
                 return __awaiter(this, void 0, void 0, function () {
-                    var cap, bgWidth_1, url_1, urlParse_1, filePath_1, err_1, fileExt_1, dimension, heights_1, imgHeight, imgWidth_1, marginTop_1, bgs_1, templatePath, _template, localCss;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
+                    var formateVal, valArr, url_1, bgSize, slice, direction, isRow_1, urlParse_1, filePath_1, err_1, fileExt_1, dimension, imgWidth_1, imgHeight_1, imgSize, sliceArr_1, offsetX_1, offsetY_1, scaleX_1, scaleY_1, realWidth, realHeight, bgs_1, templatePath, _template, localCss;
+                    return __generator(this, function (_b) {
+                        switch (_b.label) {
                             case 0:
                                 if (!(decl.prop === property)) return [3 /*break*/, 8];
-                                cap = reg.exec(decl.value);
-                                bgWidth_1 = +(cap[2] || 0);
-                                url_1 = cap[1];
+                                formateVal = decl.value.replace(/(\d+,)\s?(?=\d)/g, "$1");
+                                valArr = formateVal.split(" ");
+                                url_1 = ((_a = reg.exec(valArr[0])) === null || _a === void 0 ? void 0 : _a[1]) || "";
+                                bgSize = util_1.useNumOnly(valArr[1]);
+                                slice = [300];
+                                if (valArr[2]) {
+                                    slice = valArr[2]
+                                        .split(",")
+                                        .filter(Boolean)
+                                        .map(function (num) { return util_1.useNumOnly(num, 500); });
+                                }
+                                direction = valArr[3] || "column";
+                                isRow_1 = direction == "row";
+                                if (!url_1)
+                                    return [2 /*return*/];
                                 urlParse_1 = path.parse(url_1);
                                 return [4 /*yield*/, fs.ensureDir(realOutput)];
                             case 1:
-                                _a.sent();
-                                _a.label = 2;
+                                _b.sent();
+                                _b.label = 2;
                             case 2:
-                                _a.trys.push([2, 4, , 5]);
+                                _b.trys.push([2, 4, , 5]);
                                 return [4 /*yield*/, new Promise(function (resolve, reject) {
                                         return loaderContext.resolve(loaderContext.context, url_1, function (err, result) {
                                             return err ? reject(err) : resolve(result);
                                         });
                                     })];
                             case 3:
-                                filePath_1 = _a.sent();
+                                filePath_1 = _b.sent();
                                 return [3 /*break*/, 5];
                             case 4:
-                                err_1 = _a.sent();
+                                err_1 = _b.sent();
                                 // TODO: update error handler
                                 console.error("url invalid");
                                 return [3 /*break*/, 5];
@@ -149,62 +130,73 @@ exports["default"] = (function (_a) {
                                         });
                                     })];
                             case 6:
-                                dimension = _a.sent();
-                                heights_1 = [];
-                                imgHeight = dimension.height;
+                                dimension = _b.sent();
                                 imgWidth_1 = dimension.width;
-                                while (imgHeight > 0) {
-                                    if (imgHeight > slice) {
-                                        heights_1.push(slice);
-                                        imgHeight -= slice;
-                                    }
-                                    else {
-                                        heights_1.push(imgHeight);
-                                        imgHeight = 0;
-                                    }
-                                }
-                                marginTop_1 = 0;
+                                imgHeight_1 = dimension.height;
+                                imgSize = isRow_1 ? imgWidth_1 : imgHeight_1;
+                                sliceArr_1 = util_1.getSlices(imgSize, slice);
+                                offsetX_1 = 0;
+                                offsetY_1 = 0;
+                                scaleX_1 = !isRow_1 && bgSize ? bgSize / imgWidth_1 : 1;
+                                scaleY_1 = isRow_1 && bgSize ? bgSize / imgHeight_1 : 1;
+                                realWidth = imgWidth_1 * (isRow_1 ? scaleY_1 : scaleX_1);
+                                realHeight = imgHeight_1 * (isRow_1 ? scaleY_1 : scaleX_1);
                                 bgs_1 = [];
                                 return [4 /*yield*/, new Promise(function (resolve) {
                                         var mtMap = new Map();
-                                        heights_1.forEach(function (height, ind) {
+                                        sliceArr_1.forEach(function (slice, ind) {
                                             var itemName = blockFormate(urlParse_1.name, ind);
                                             var itemBase = "" + itemName + fileExt_1;
                                             var resultPath = path.resolve(realOutput, itemBase);
-                                            mtMap.set(ind, marginTop_1);
+                                            var extraWidth = isRow_1 ? slice : imgWidth_1;
+                                            var extraHeight = isRow_1 ? imgHeight_1 : slice;
+                                            mtMap.set(ind, { offsetX: offsetX_1, offsetY: offsetY_1 });
                                             sharp(filePath_1)
                                                 .extract({
-                                                left: 0,
-                                                top: marginTop_1,
-                                                width: imgWidth_1,
-                                                height: height
+                                                left: offsetX_1,
+                                                top: offsetY_1,
+                                                width: extraWidth,
+                                                height: extraHeight
                                             })
                                                 .toFile(resultPath, function (err, info) {
-                                                var _bgWidth = imgWidth_1;
-                                                var _bgHeight = height;
-                                                var _top = mtMap.get(ind);
-                                                if (bgWidth_1) {
-                                                    var scaleFactor = bgWidth_1 / imgWidth_1;
-                                                    _bgWidth = bgWidth_1;
-                                                    _bgHeight = height * scaleFactor;
-                                                    _top = _top * scaleFactor;
+                                                var offset = mtMap.get(ind);
+                                                var left = offset.offsetX;
+                                                var top = offset.offsetY;
+                                                var width = 0;
+                                                var height = 0;
+                                                if (isRow_1) {
+                                                    width = slice;
+                                                    height = imgHeight_1 * scaleY_1;
+                                                    width *= scaleY_1;
+                                                    left *= scaleY_1;
+                                                    top = "center"; // *= scaleY;
                                                 }
-                                                bgs_1.push({
-                                                    top: _top,
-                                                    height: _bgHeight,
-                                                    width: _bgWidth,
+                                                else {
+                                                    width = imgWidth_1 * scaleX_1;
+                                                    height = slice;
+                                                    height *= scaleX_1;
+                                                    left = "center"; // *= scaleX;
+                                                    top *= scaleX_1;
+                                                }
+                                                bgs_1.push(Object.assign(util_1.transformPX({
+                                                    top: top,
+                                                    left: left,
+                                                    height: height,
+                                                    width: width
+                                                }), {
                                                     ind: ind,
-                                                    isLast: ind === heights_1.length - 1,
+                                                    isLast: ind === sliceArr_1.length - 1,
                                                     url: path.join(outputPath, itemBase)
-                                                });
-                                                if (bgs_1.length === heights_1.length)
+                                                }));
+                                                if (bgs_1.length === sliceArr_1.length)
                                                     resolve();
                                             });
-                                            marginTop_1 += height;
+                                            offsetX_1 += isRow_1 ? extraWidth : 0;
+                                            offsetY_1 += isRow_1 ? 0 : extraHeight;
                                         });
                                     })];
                             case 7:
-                                _a.sent();
+                                _b.sent();
                                 bgs_1.sort(function (a, b) { return a.ind - b.ind; });
                                 templatePath = path.resolve(__dirname, "../../template.hbs");
                                 if (template) {
@@ -215,11 +207,14 @@ exports["default"] = (function (_a) {
                                         templatePath = path.resolve(_context, template);
                                     }
                                 }
-                                _template = handlebars.compile(fs.readFileSync(templatePath, 'utf-8'));
-                                localCss = _template({ bgs: bgs_1 });
+                                _template = handlebars.compile(fs.readFileSync(templatePath, "utf-8"));
+                                localCss = _template(Object.assign({ bgs: bgs_1 }, util_1.transformPX({
+                                    imgWidth: realWidth,
+                                    imgHeight: realHeight
+                                })));
                                 decl.after(localCss);
                                 decl.remove();
-                                _a.label = 8;
+                                _b.label = 8;
                             case 8: return [2 /*return*/];
                         }
                     });

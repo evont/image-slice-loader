@@ -4,57 +4,20 @@ import * as sharp from "sharp";
 import * as path from "path";
 import * as fs from "fs-extra";
 import * as handlebars from "handlebars";
+import { startsWith, useNumOnly, transformPX, transformAlias, getSlices } from "./util";
 import { PluginOptions } from "../type";
 import { ISizeCalculationResult } from "image-size/dist/types/interface";
 
-// enhanced-resolve/lib/AliasPlugin
-function startsWith(string, searchString) {
-  const stringLength = string.length;
-  const searchLength = searchString.length;
-
-  // early out if the search length is greater than the search string
-  if (searchLength > stringLength) {
-    return false;
-  }
-  let index = -1;
-  while (++index < searchLength) {
-    if (string.charCodeAt(index) !== searchString.charCodeAt(index)) {
-      return false;
-    }
-  }
-  return true;
-}
-
 export default ({ loaderContext, options }: PluginOptions) => {
-  let { property, slice, blockFormate, name, outputPath, clearOutput, template } = options;
+  let { property, blockFormate, outputPath, clearOutput, template } = options;
   const PostcssPlugin: PluginCreator<{}> = function () {
-    const reg = /url\(["']?(.*?)["']?\)\s*(?:(\d+)(?:px)?)?/;
+    const reg = /url\(["']?(.*?)["']?\)/;
 
     const compilerOptions = loaderContext._compiler.options;
     const _alias = compilerOptions.resolve.alias;
     const _context = compilerOptions.context || loaderContext.rootContext;
 
-    const alias = Object.keys(_alias).map((key) => {
-      let obj = _alias[key];
-      let onlyModule = false;
-      if (/\$$/.test(key)) {
-        onlyModule = true;
-        key = key.substr(0, key.length - 1);
-      }
-      if (typeof obj === "string") {
-        obj = {
-          alias: obj,
-        };
-      }
-      obj = Object.assign(
-        {
-          name: key,
-          onlyModule,
-        },
-        obj
-      );
-      return obj;
-    });
+    const alias = transformAlias(_alias);
 
     let realOutput = outputPath;
     // if output path is match alias, transform into alias path
@@ -73,13 +36,13 @@ export default ({ loaderContext, options }: PluginOptions) => {
     }
     // if not alias or not absolute path, transform into path relate to webpack context
     if (!path.isAbsolute(realOutput)) {
-      realOutput = path.resolve(_context, realOutput)
+      realOutput = path.resolve(_context, realOutput);
     }
 
     if (clearOutput) {
       try {
-        fs.removeSync(realOutput)
-      } catch(e) {
+        fs.removeSync(realOutput);
+      } catch (e) {
         void e;
       }
     }
@@ -88,13 +51,28 @@ export default ({ loaderContext, options }: PluginOptions) => {
       postcssPlugin: "image-slice-parser",
       async Declaration(decl) {
         if (decl.prop === property) {
-          const cap = reg.exec(decl.value);
-          const bgWidth: number = +(cap[2] || 0);
-          const url = cap[1];
+          // use example: [url, bgWidth, slice, direction]
+          // 1. long-bg: url(@assets/long-1.png) 375 300 column;
+          // 2. long-bg: url(@assets/long-1.png) 375 [200, 400, 300];
+          // TODO: consider more situation about wrong usage
+          const formateVal = decl.value.replace(/(\d+,)\s?(?=\d)/g, "$1");
+          const valArr = formateVal.split(" ");
+          const url = reg.exec(valArr[0])?.[1] || "";
+          let bgSize: number = useNumOnly(valArr[1]); // zero means use origin image size
+          let slice: number[] = [300];
+          if (valArr[2]) {
+            slice = valArr[2]
+              .split(",")
+              .filter(Boolean)
+              .map((num) => useNumOnly(num, 500));
+          }
+          const direction = valArr[3] || "column";
+          const isRow = direction == "row";
+          if (!url) return;
+
           const urlParse = path.parse(url);
           let filePath;
 
-          
           await fs.ensureDir(realOutput);
 
           try {
@@ -117,59 +95,80 @@ export default ({ loaderContext, options }: PluginOptions) => {
               });
             }
           );
-          const heights = [];
-          let imgHeight = dimension.height;
-          let imgWidth = dimension.width;
-          while (imgHeight > 0) {
-            if (imgHeight > slice) {
-              heights.push(slice);
-              imgHeight -= slice;
-            } else {
-              heights.push(imgHeight);
-              imgHeight = 0;
-            }
-          }
-          let marginTop = 0;
+          const imgWidth = dimension.width;
+          const imgHeight = dimension.height;
+          const imgSize = isRow ? imgWidth : imgHeight;
+
+          const sliceArr = getSlices(imgSize, slice);
+          let offsetX = 0;
+          let offsetY = 0;
+          const scaleX = !isRow && bgSize ? bgSize / imgWidth : 1;
+          const scaleY = isRow && bgSize ? bgSize / imgHeight : 1;
+          const realWidth = imgWidth * (isRow ? scaleY : scaleX);
+          const realHeight = imgHeight * (isRow ? scaleY : scaleX);
           let bgs = [];
           await new Promise<void>((resolve) => {
             const mtMap = new Map();
-            heights.forEach((height, ind) => {
+
+            sliceArr.forEach((slice, ind) => {
               const itemName = blockFormate(urlParse.name, ind);
               const itemBase = `${itemName}${fileExt}`;
               const resultPath = path.resolve(realOutput, itemBase);
-              mtMap.set(ind, marginTop);
+
+              const extraWidth = isRow ? slice : imgWidth;
+              const extraHeight = isRow ? imgHeight : slice;
+
+              mtMap.set(ind, { offsetX, offsetY });
               sharp(filePath)
                 .extract({
-                  left: 0,
-                  top: marginTop,
-                  width: imgWidth,
-                  height,
+                  left: offsetX,
+                  top: offsetY,
+                  width: extraWidth,
+                  height: extraHeight,
                 })
                 .toFile(resultPath, (err, info) => {
-                  let _bgWidth = imgWidth;
-                  let _bgHeight = height;
-                  let _top = mtMap.get(ind);
-                  if (bgWidth) {
-                    const scaleFactor = bgWidth / imgWidth;
-                    _bgWidth = bgWidth;
-                    _bgHeight = height * scaleFactor;
-                    _top = _top * scaleFactor;
+                  const offset = mtMap.get(ind);
+                  let left = offset.offsetX;
+                  let top = offset.offsetY;
+                  let width = 0;
+                  let height = 0;
+                  if (isRow) {
+                    width = slice;
+                    height = imgHeight * scaleY;
+                    width *= scaleY;
+                    left *= scaleY;
+                    top = "center"; // *= scaleY;
+                  } else {
+                    width = imgWidth * scaleX;
+                    height = slice;
+                    height *= scaleX;
+                    left = "center"; // *= scaleX;
+                    top *= scaleX;
                   }
-                  bgs.push({
-                    top: _top,
-                    height: _bgHeight,
-                    width: _bgWidth,
-                    ind,
-                    isLast: ind === heights.length - 1,
-                    url: path.join(outputPath, itemBase),
-                  });
-                  if (bgs.length === heights.length) resolve();
+
+                  bgs.push(
+                    Object.assign(
+                      transformPX({
+                        top,
+                        left,
+                        height,
+                        width,
+                      }),
+                      {
+                        ind,
+                        isLast: ind === sliceArr.length - 1,
+                        url: path.join(outputPath, itemBase),
+                      }
+                    )
+                  );
+                  if (bgs.length === sliceArr.length) resolve();
                 });
-              marginTop += height;
+              offsetX += isRow ? extraWidth : 0;
+              offsetY += isRow ? 0 : extraHeight;
             });
           });
           bgs.sort((a, b) => a.ind - b.ind);
-          let templatePath = path.resolve(__dirname, "../../template.hbs")
+          let templatePath = path.resolve(__dirname, "../../template.hbs");
           if (template) {
             if (path.isAbsolute(template)) {
               templatePath = template;
@@ -177,8 +176,18 @@ export default ({ loaderContext, options }: PluginOptions) => {
               templatePath = path.resolve(_context, template);
             }
           }
-          const _template = handlebars.compile(fs.readFileSync(templatePath, 'utf-8'));
-          const localCss = _template({ bgs });
+          const _template = handlebars.compile(
+            fs.readFileSync(templatePath, "utf-8")
+          );
+          const localCss = _template(
+            Object.assign(
+              { bgs },
+              transformPX({
+                imgWidth: realWidth,
+                imgHeight: realHeight,
+              })
+            )
+          );
           decl.after(localCss);
           decl.remove();
         }

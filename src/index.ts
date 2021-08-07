@@ -7,9 +7,9 @@ import { LoaderOptions } from './type';
 // TODO: 
 // 1. 截断长度为数字时，按数字截断，长度为数组时，判断数据是不是纯数字，然后按顺序截断
 
-// 2. 注意导出loader 单位为px 时，考虑其他loader 转换顺序，要放在loader 之前
+// 2. 考虑构建缓存，尽量只在url 变化的时候做变化
 
-// 3. 使用icon-font-loader 的做法，提供一个名字或者mixins 来完成背景裁切，而不是替换
+// 3. 测试删除原来图片的功能
 
 // 4. 考虑横竖方向裁剪
 
@@ -23,7 +23,6 @@ function mergeOptions(options: LoaderOptions): LoaderOptions {
   return Object.assign({
     slice: 200,
     property: "long-bg",
-    direction: "vertical",
     name: "[name]-[contenthash].[ext]",
     blockFormate: (name, index) => {
       return `${name}__block__${index}`;
