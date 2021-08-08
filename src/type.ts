@@ -3,9 +3,13 @@ export interface LoaderOptions {
   outputPath?: string;
   clearOutput?: boolean;
   template?: string;
-  blockFormate?: (name: string, index: number) => string;
+  output?: (name: string, index: number) => string | string;
 }
 export interface PluginOptions {
   loaderContext: any,
-  options: LoaderOptions
+  options: LoaderOptions,
+  oldCache: Record<string, {
+    hash: string;
+    bgs: string[]
+  }>
 }

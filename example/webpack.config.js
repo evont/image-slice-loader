@@ -1,14 +1,15 @@
 const path = require("path");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const ImageSlicePlugin = require("../dist").Plugin;
+const {CleanWebpackPlugin} = require("clean-webpack-plugin");
 
 module.exports = {
   mode: "production",
   entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "dist"),
-    publicPath: "./"
+    publicPath: "./",
+    assetModuleFilename: 'images/[hash][ext][query]'
   },
   resolveLoader: {
     alias: {
@@ -36,22 +37,20 @@ module.exports = {
             loader: "image-slice-loader",
             options: {
               outputPath: "@assets/slice",
-              template: "./src/template.hbs"
+              template: "./src/template.hbs",
+              output: "[name]_slice_[index]"
             }
           },
         ],
       },
-      // {
-      //   test: /\.(png|jpe?g|webp|git|svg|)$/i,
-      //   use: [
-      //     {
-      //       loader: 'url-loader',
-      //     },
-      //   ],
-      // },
+      {
+        test: /\.(png|jpe?g|webp|git|svg|)$/i,
+        type: 'asset/resource'
+      },
     ],
   },
   plugins: [
+    new CleanWebpackPlugin(),
     new MiniCssExtractPlugin(),
     new HtmlWebpackPlugin({
       template: "./public/index.html"

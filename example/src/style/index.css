@@ -17,8 +17,13 @@
   height: 750px;
   width: 7121px;
 
-  long-bg:  url(@assets/long-2.jpeg) 375 120, 325, 333,880, 550, 1000,900,650,920, 988 row;
+  long-bg:  url(@assets/deep/long-2.jpeg) 375 120, 325, 333,880, 550, 1000,900,650,920, 988 row;
 }
+
+/* #app3 {
+  long-bg:  url(@assets/long-3.png) 375 520, 325, 333,880, 550, 1000,900,650,920, 988 row;
+} */
+
 
 @keyframes move {
   from {

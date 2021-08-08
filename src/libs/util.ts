@@ -77,3 +77,14 @@ export function getSlices(size: number, arr: number[]): number[] {
   }
   return heights;
 }
+
+
+export function getOutput(output: (name: string, index: number) => string | string, name: string, ind: number) {
+  let result: string;
+  if (typeof output === "string") {
+    result = (output as string).replace(/\[name\]/g, name).replace(/\[index\]/g, `${ind}`);
+  } else {
+    result = output(name, ind)
+  }
+  return result;
+}

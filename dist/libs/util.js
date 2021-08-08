@@ -1,6 +1,6 @@
 "use strict";
 exports.__esModule = true;
-exports.getSlices = exports.transformAlias = exports.transformPX = exports.useNumOnly = exports.startsWith = void 0;
+exports.getOutput = exports.getSlices = exports.transformAlias = exports.transformPX = exports.useNumOnly = exports.startsWith = void 0;
 // enhanced-resolve/lib/AliasPlugin
 function startsWith(string, searchString) {
     var stringLength = string.length;
@@ -69,3 +69,14 @@ function getSlices(size, arr) {
     return heights;
 }
 exports.getSlices = getSlices;
+function getOutput(output, name, ind) {
+    var result;
+    if (typeof output === "string") {
+        result = output.replace(/\[name\]/g, name).replace(/\[index\]/g, "" + ind);
+    }
+    else {
+        result = output(name, ind);
+    }
+    return result;
+}
+exports.getOutput = getOutput;

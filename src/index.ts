@@ -1,50 +1,63 @@
-import { getOptions } from 'loader-utils';
+import { getOptions } from "loader-utils";
 import postcss from "postcss";
+import { validate } from "schema-utils";
 
-import postcssPlugin from "./libs/postcssPlugin";
-import { LoaderOptions } from './type';
+import getPlugin from "./libs/plugin";
+import { LOADER_NAME } from "./libs/constant";
+import { getCache, setCache, invalidCache } from "./libs/cache";
+import { LoaderOptions } from "./type";
+import schema from "./schema";
 
-// TODO: 
-// 1. 截断长度为数字时，按数字截断，长度为数组时，判断数据是不是纯数字，然后按顺序截断
-
+// TODO:
+// 1. 缓存策略优化
 // 2. 考虑构建缓存，尽量只在url 变化的时候做变化
-
-// 3. 测试删除原来图片的功能
-
-// 4. 考虑横竖方向裁剪
-
-// 5，考虑能不能除了css 中使用，也做成html 中使用长背景懒加载
-// css 的loader 滚动加载方案可以考虑用滚动时动态加类名的形式
-// 也可以考虑如果是模版之类的情况下，使用指定的选择器拿到长图属性，输出img 到指定的选择器
-
 
 //TODO: 做参数验证
 function mergeOptions(options: LoaderOptions): LoaderOptions {
-  return Object.assign({
-    slice: 200,
-    property: "long-bg",
-    name: "[name]-[contenthash].[ext]",
-    blockFormate: (name, index) => {
-      return `${name}__block__${index}`;
+  const mergeOption = Object.assign(
+    {
+      property: "long-bg",
+      clearOutput: true,
+      outputPath: "./slice",
     },
-    clearOutput: true,
-    outputPath: "./slice"
-  }, options)
+    options
+  );
+  validate(schema, mergeOption, {
+    name: LOADER_NAME,
+  });
+  return mergeOption;
 }
 export default function loader(source, meta) {
   const callback = this.async();
   this.cacheable();
-  const options = mergeOptions(getOptions(this) || {});
-  const pcOptions = {
-    to: this.resourcePath,
-    from: this.resourcePath,
-  };
-  
-  postcss(postcssPlugin({ loaderContext: this, options })).process(source, pcOptions).then(result => {
-    const map = result.map && result.map.toJSON();
-    callback(null, result.css, map);
-    return null;
-  }).catch((error) => {
+  let options = {};
+  try {
+    options = mergeOptions(getOptions(this) || {});
+    const pcOptions = {
+      to: this.resourcePath,
+      from: this.resourcePath,
+    };
+    const oldCache = getCache();
+
+    const { cache, PostcssPlugin } = getPlugin({
+      loaderContext: this,
+      options,
+      oldCache,
+    });
+    postcss(PostcssPlugin)
+      .process(source, pcOptions)
+      .then((result) => {
+        const map = result.map && result.map.toJSON();
+        // console.log(cache);
+        invalidCache(cache, oldCache);
+
+        setCache(cache);
+        callback(null, result.css, map);
+      })
+      .catch((error) => {
+        callback(error);
+      });
+  } catch (error) {
     callback(error);
-  });
+  }
 }
