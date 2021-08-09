@@ -38,6 +38,10 @@ module.exports = {
             options: {
               outputPath: "@assets/slice",
               template: "./src/template.hbs",
+              sepTemplate: "./src/template-sep.hbs",
+              handlebarsHelpers: {
+                getInd(ind) { return ind + 1}
+              },
               output: "[name]_slice_[index]"
             }
           },

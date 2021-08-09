@@ -58,10 +58,25 @@ function getBgHash(filePath) {
     var buffer = fs.readFileSync(filePath);
     return crypto_1.createHash("md5").update(buffer).digest("hex");
 }
+function getTemplate(template, context, fallback) {
+    var templatePath;
+    if (template) {
+        if (path.isAbsolute(template)) {
+            templatePath = template;
+        }
+        else {
+            templatePath = path.resolve(context, template);
+        }
+    }
+    else {
+        templatePath = path.resolve(__dirname, fallback);
+    }
+    return templatePath;
+}
 exports["default"] = (function (_a) {
     var loaderContext = _a.loaderContext, options = _a.options, oldCache = _a.oldCache;
     var cache = {};
-    var property = options.property, output = options.output, outputPath = options.outputPath, clearOutput = options.clearOutput, template = options.template;
+    var property = options.property, output = options.output, outputPath = options.outputPath, clearOutput = options.clearOutput, template = options.template, sepTemplate = options.sepTemplate, handlebarsHelpers = options.handlebarsHelpers;
     var PostcssPlugin = function () {
         var reg = /url\(["']?(.*?)["']?\)/;
         var compilerOptions = loaderContext._compiler.options;
@@ -89,7 +104,7 @@ exports["default"] = (function (_a) {
             Declaration: function (decl) {
                 var _a, _b, _c;
                 return __awaiter(this, void 0, void 0, function () {
-                    var formateVal, valArr, url_1, bgSize, slice, direction, isRow_1, urlParse_1, filePath_1, err_1, fileExt_1, dimension, imgWidth_1, imgHeight_1, imgSize, sliceArr_1, offsetX_1, offsetY_1, scaleX_1, scaleY_1, realWidth, realHeight, bgs, bgsResource_1, mtMap_1, tasks, err_2, templatePath, _template, localCss;
+                    var formateVal, valArr, url_1, bgSize, slice, direction, isSep, tmp, isRow_1, urlParse_1, filePath_1, err_1, fileExt_1, dimension, imgWidth_1, imgHeight_1, imgSize, sliceArr_1, offsetX_1, offsetY_1, scaleX_1, scaleY_1, realWidth, realHeight, bgs, bgsResource_1, mtMap_1, tasks, err_2, templatePath, _template, localCss;
                     return __generator(this, function (_d) {
                         switch (_d.label) {
                             case 0:
@@ -105,8 +120,20 @@ exports["default"] = (function (_a) {
                                         .filter(Boolean)
                                         .map(function (num) { return util_1.useNumOnly(num, 500); });
                                 }
-                                direction = valArr[3] || "column";
-                                isRow_1 = direction == "row";
+                                direction = "column";
+                                isSep = false;
+                                tmp = valArr[3];
+                                if (tmp === "column" || tmp === "row") {
+                                    direction = tmp;
+                                    if (valArr[4]) {
+                                        tmp = valArr[4];
+                                    }
+                                    else {
+                                        tmp = "";
+                                    }
+                                }
+                                isSep = (tmp && tmp === "true") || false;
+                                isRow_1 = direction === "row";
                                 if (!url_1)
                                     return [2 /*return*/];
                                 urlParse_1 = path.parse(url_1);
@@ -241,24 +268,23 @@ exports["default"] = (function (_a) {
                                 console.error(err_2);
                                 return [3 /*break*/, 10];
                             case 10:
-                                templatePath = void 0;
-                                if (template) {
-                                    if (path.isAbsolute(template)) {
-                                        templatePath = template;
-                                    }
-                                    else {
-                                        templatePath = path.resolve(_context, template);
-                                    }
-                                }
-                                else {
-                                    templatePath = path.resolve(__dirname, "../../template.hbs");
+                                templatePath = isSep
+                                    ? getTemplate(sepTemplate, _context, "../../template-sep.hbs")
+                                    : getTemplate(template, _context, "../../template.hbs");
+                                if (handlebarsHelpers) {
+                                    handlebars.registerHelper(handlebarsHelpers);
                                 }
                                 _template = handlebars.compile(fs.readFileSync(templatePath, "utf-8"));
                                 localCss = _template(Object.assign({ bgs: bgs }, util_1.transformPX({
                                     imgWidth: realWidth,
                                     imgHeight: realHeight
                                 })));
-                                decl.after(localCss);
+                                if (isSep) {
+                                    decl.parent.after(localCss);
+                                }
+                                else {
+                                    decl.after(localCss);
+                                }
                                 decl.remove();
                                 _d.label = 11;
                             case 11: return [2 /*return*/];

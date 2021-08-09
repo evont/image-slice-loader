@@ -17,26 +17,11 @@
   height: 750px;
   width: 7121px;
 
-  long-bg:  url(@assets/deep/long-2.jpeg) 375 120, 325, 333,880, 550, 1000,900,650,920, 988 row;
+  long-bg:  url(@assets/deep/long-2.jpeg) 375 120, 325, 333,880, 550, 1000,900,650,920, 988 row false;
 }
 
-/* #app3 {
-  long-bg:  url(@assets/long-3.png) 375 520, 325, 333,880, 550, 1000,900,650,920, 988 row;
-} */
-
-
-@keyframes move {
-  from {
-    transform: translate3d(-100%, -50%, 0);
-  }
-  to {
-    transform: translate3d(-50%, -50%, 0);
-  }
-}
 #app3 {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate3d(-50%, -50%, 0);
-  animation:  move 1s linear;
+  display: flex;
+  flex-direction: column;
+  long-bg:  url(@assets/long-3.png) 375 520, 325, 333,880, 550, 1000,900,650,920, 988 true;
 }

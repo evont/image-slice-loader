@@ -20,9 +20,25 @@ function getBgHash(filePath) {
   const buffer = fs.readFileSync(filePath);
   return createHash("md5").update(buffer).digest("hex");
 }
+
+function getTemplate(template: string, context: string, fallback: string) {
+  let templatePath;
+  if (template) {
+    if (path.isAbsolute(template)) {
+      templatePath = template;
+    } else {
+      templatePath = path.resolve(context, template);
+    }
+  } else {
+    templatePath = path.resolve(__dirname, fallback);
+  }
+  return templatePath;
+}
+
 export default ({ loaderContext, options, oldCache }: PluginOptions) => {
   const cache = {};
-  let { property, output, outputPath, clearOutput, template } = options;
+  let { property, output, outputPath, clearOutput, template, sepTemplate, handlebarsHelpers } =
+    options;
   const PostcssPlugin: PluginCreator<{}> = function () {
     const reg = /url\(["']?(.*?)["']?\)/;
 
@@ -56,7 +72,7 @@ export default ({ loaderContext, options, oldCache }: PluginOptions) => {
       postcssPlugin: "image-slice-parser",
       async Declaration(decl) {
         if (decl.prop === property) {
-          // use example: [url, bgSize, slice, direction]
+          // use example: [url, bgSize, slice, direction, isSep]
           // 1. long-bg: url(@assets/long-1.png) 375 300 column;
           // 2. long-bg: url(@assets/long-1.png) 375 [200, 400, 300];
 
@@ -72,8 +88,19 @@ export default ({ loaderContext, options, oldCache }: PluginOptions) => {
               .filter(Boolean)
               .map((num) => useNumOnly(num, 500));
           }
-          const direction = valArr[3] || "column";
-          const isRow = direction == "row";
+          let direction = "column";
+          let isSep = false;
+          let tmp = valArr[3];
+          if (tmp === "column" || tmp === "row") {
+            direction = tmp;
+            if (valArr[4]) {
+              tmp = valArr[4];
+            } else {
+              tmp = "";
+            }
+          }
+          isSep = (tmp && tmp === "true") || false;
+          const isRow = direction === "row";
           if (!url) return;
 
           const urlParse = path.parse(url);
@@ -212,15 +239,11 @@ export default ({ loaderContext, options, oldCache }: PluginOptions) => {
             ];
             console.error(err);
           }
-          let templatePath;
-          if (template) {
-            if (path.isAbsolute(template)) {
-              templatePath = template;
-            } else {
-              templatePath = path.resolve(_context, template);
-            }
-          } else {
-            templatePath = path.resolve(__dirname, "../../template.hbs");
+          const templatePath = isSep
+            ? getTemplate(sepTemplate, _context, "../../template-sep.hbs")
+            : getTemplate(template, _context, "../../template.hbs");
+          if (handlebarsHelpers) {
+            handlebars.registerHelper(handlebarsHelpers)
           }
           const _template = handlebars.compile(
             fs.readFileSync(templatePath, "utf-8")
@@ -235,7 +258,12 @@ export default ({ loaderContext, options, oldCache }: PluginOptions) => {
               })
             )
           );
-          decl.after(localCss);
+          if (isSep) {
+            decl.parent.after(localCss)
+          } else {
+            decl.after(localCss);
+          }
+         
           decl.remove();
         }
       },

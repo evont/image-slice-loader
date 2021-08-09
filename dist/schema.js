@@ -22,6 +22,14 @@ exports["default"] = {
         template: {
             type: "string",
             description: "Template of virtual property transformed local CSS. It accepts template content instead of a template file path"
+        },
+        sepTemplate: {
+            type: "string",
+            description: "Template of virtual property transformed local CSS. It accepts template content instead of a template file path"
+        },
+        handlebarsHelpers: {
+            type: "object",
+            description: "helper for handlebars template"
         }
     },
     additionalProperties: false

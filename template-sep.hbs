@@ -1,10 +1,10 @@
-#app3 .img {
+.img {
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
 }
 {{#each bgs}}
-#app3 .active:nth-child({{getInd @index}}) {
+.img:nth-child({{ind}}) {
   width: {{width}};
   height: {{height}};
   background-image: url({{url}});
