@@ -42,7 +42,7 @@ module.exports = {
               handlebarsHelpers: {
                 getInd(ind) { return ind + 1}
               },
-              output: "[name]_slice_[index]"
+              output: "[hash]_slice_[index]"
             }
           },
         ],

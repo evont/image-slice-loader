@@ -100,9 +100,9 @@ export function invalidateV2(newCache, oldCache) {
 export function getCacheV2(imgHash, optionHash) {
   const cache = fs.readJsonSync(cachePath, { throws: false });
   if (cache && imgHash in cache) {
-    const { option } = cache[imgHash];
-    if  (optionHash in option) {
-      return option[optionHash];
+    const { options } = cache[imgHash];
+    if  (optionHash in options) {
+      return cache[imgHash];
     }
   }
 }

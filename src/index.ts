@@ -37,19 +37,17 @@ export default function loader(source, meta) {
       to: this.resourcePath,
       from: this.resourcePath,
     };
-    const oldCache = getCache();
 
     const { cache, PostcssPlugin } = getPlugin({
       loaderContext: this,
       options,
-      oldCache,
     });
     postcss(PostcssPlugin)
       .process(source, pcOptions)
       .then((result) => {
         const map = result.map && result.map.toJSON();
         // console.log(cache);
-        invalidCache(cache, oldCache);
+        // invalidCache(cache, oldCache);
 
         setCache(cache);
         callback(null, result.css, map);

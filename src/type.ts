@@ -10,8 +10,4 @@ export interface LoaderOptions {
 export interface PluginOptions {
   loaderContext: any,
   options: LoaderOptions,
-  oldCache: Record<string, {
-    hash: string;
-    bgs: string[]
-  }>
 }

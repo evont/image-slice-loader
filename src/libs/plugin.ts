@@ -15,6 +15,7 @@ import {
 } from "./util";
 import { PluginOptions } from "../type";
 import { ISizeCalculationResult } from "image-size/dist/types/interface";
+import { getCacheV2 } from "./cache";
 
 function getBgHash(filePath) {
   const buffer = fs.readFileSync(filePath);
@@ -35,10 +36,17 @@ function getTemplate(template: string, context: string, fallback: string) {
   return templatePath;
 }
 
-export default ({ loaderContext, options, oldCache }: PluginOptions) => {
+export default ({ loaderContext, options }: PluginOptions) => {
   const cache = {};
-  let { property, output, outputPath, clearOutput, template, sepTemplate, handlebarsHelpers } =
-    options;
+  let {
+    property,
+    output,
+    outputPath,
+    clearOutput,
+    template,
+    sepTemplate,
+    handlebarsHelpers,
+  } = options;
   const PostcssPlugin: PluginCreator<{}> = function () {
     const reg = /url\(["']?(.*?)["']?\)/;
 
@@ -120,36 +128,68 @@ export default ({ loaderContext, options, oldCache }: PluginOptions) => {
             );
           }
           if (!filePath) return;
-          // TODO: update cache rule to match same file with different slice rule
-          cache[filePath] = {
-            hash: getBgHash(filePath),
-          };
-
-          if (clearOutput) {
-            if (oldCache && oldCache[filePath]) {
-              oldCache[filePath]?.bgs?.map((bg) => {
-                try {
-                  fs.removeSync(bg);
-                } catch (err) {
-                  void err;
-                }
-              });
-            }
-          }
 
           const fileExt = path.extname(filePath);
-          const dimension = await new Promise<ISizeCalculationResult>(
-            (resolve) => {
-              sizeOf(filePath, (err, ds) => {
-                resolve(ds);
-              });
+
+          // TODO: update cache rule to match same file with different slice rule
+          const fileHash = getBgHash(filePath);
+
+          const optionHash = createHash("md5")
+            .update(`${direction}${slice.join(",")}`, "utf-8")
+            .digest("hex");
+
+          let useCache = false;
+          let bgsResource = [];
+          let sliceArr = [];
+          let imgWidth;
+          let imgHeight;
+          const oldCache = getCacheV2(fileHash, optionHash);
+          const currentOption = {};
+          let options = {};
+          if (oldCache) {
+            console.log("oldCache", oldCache);
+            const {
+              options: _options,
+              imgWidth: _imgWidth,
+              imgHeight: _imgHeight,
+            } = oldCache;
+            options = _options;
+            const { bgsResource: _bgsResource, sliceArr: _sliceArr } =
+              options[optionHash];
+            bgsResource = _bgsResource;
+            sliceArr = _sliceArr;
+            imgWidth = _imgWidth;
+            imgHeight = _imgHeight;
+            useCache = true;
+          } else {
+            options = {
+              [optionHash]: currentOption,
+            };
+            const dimension = await new Promise<ISizeCalculationResult>(
+              (resolve) => {
+                sizeOf(filePath, (err, ds) => {
+                  resolve(ds);
+                });
+              }
+            );
+            imgWidth = dimension.width;
+            imgHeight = dimension.height;
+          }
+
+          cache[fileHash] = Object.assign(
+            cache[fileHash] || {},
+            {
+              options: Object.assign(cache[fileHash]?.options || {}, options),
+            },
+            {
+              imgWidth,
+              imgHeight,
             }
           );
-          const imgWidth = dimension.width;
-          const imgHeight = dimension.height;
+
           const imgSize = isRow ? imgWidth : imgHeight;
 
-          const sliceArr = getSlices(imgSize, slice);
+          if (!sliceArr.length) sliceArr = getSlices(imgSize, slice);
           let offsetX = 0;
           let offsetY = 0;
           const scaleX = !isRow && bgSize ? bgSize / imgWidth : 1;
@@ -157,59 +197,74 @@ export default ({ loaderContext, options, oldCache }: PluginOptions) => {
           const realWidth = imgWidth * (isRow ? scaleY : scaleX);
           const realHeight = imgHeight * (isRow ? scaleY : scaleX);
           let bgs = [];
-          const bgsResource = [];
           const mtMap = new Map();
           const tasks = sliceArr.map((slice, ind) => {
-            const itemName = getOutput(output, urlParse.name, ind);
+            const itemName = getOutput(output, urlParse.name, ind, fileHash.substr(0, 5));
             const itemBase = `${itemName}${fileExt}`;
             const resultPath = path.resolve(realOutput, itemBase);
 
             const extraWidth = isRow ? slice : imgWidth;
             const extraHeight = isRow ? imgHeight : slice;
-
+            const url = path.join(outputPath, itemBase);
             mtMap.set(ind, { offsetX, offsetY });
-            bgsResource.push(resultPath);
-            const task = sharp(filePath)
-              .extract({
-                left: offsetX,
-                top: offsetY,
-                width: extraWidth,
-                height: extraHeight,
-              })
-              .toFile(resultPath)
-              .then(() => {
-                const offset = mtMap.get(ind);
-                let left = offset.offsetX;
-                let top = offset.offsetY;
-                let width = 0;
-                let height = 0;
-                if (isRow) {
-                  width = slice;
-                  height = imgHeight * scaleY;
-                  width *= scaleY;
-                  left *= scaleY;
-                  top = "center"; // *= scaleY;
-                } else {
-                  width = imgWidth * scaleX;
-                  height = slice;
-                  height *= scaleX;
-                  left = "center"; // *= scaleX;
-                  top *= scaleX;
-                }
-                return Object.assign(
-                  transformPX({
-                    top,
-                    left,
-                    height,
-                    width,
-                  }),
-                  {
-                    ind,
-                    isLast: ind === sliceArr.length - 1,
-                    url: path.join(outputPath, itemBase),
-                  }
-                );
+
+            let prm;
+            if (useCache) {
+              prm = Promise.resolve();
+              // console.log("use cache to prm");
+            } else {
+              console.log("sharppp")
+              bgsResource.push({
+                ind,
+                url,
+                offsetX,
+                offsetY,
               });
+              prm = sharp(filePath)
+                .extract({
+                  left: offsetX,
+                  top: offsetY,
+                  width: extraWidth,
+                  height: extraHeight,
+                })
+                .toFile(resultPath);
+            }
+
+            const task = prm.then(() => {
+              const offset = mtMap.get(ind);
+              let left = offset.offsetX;
+              let top = offset.offsetY;
+              let width = 0;
+              let height = 0;
+              if (isRow) {
+                width = slice;
+                height = imgHeight * scaleY;
+                width *= scaleY;
+                left *= scaleY;
+                top = "center"; // *= scaleY;
+              } else {
+                width = imgWidth * scaleX;
+                height = slice;
+                height *= scaleX;
+                left = "center"; // *= scaleX;
+                top *= scaleX;
+              }
+              return Object.assign(
+                transformPX({
+                  top,
+                  left,
+                  height,
+                  width,
+                }),
+                {
+                  ind,
+                  isLast: ind === sliceArr.length - 1,
+                  url,
+                  offsetX,
+                  offsetY,
+                }
+              );
+            });
 
             offsetX += isRow ? extraWidth : 0;
             offsetY += isRow ? 0 : extraHeight;
@@ -221,7 +276,11 @@ export default ({ loaderContext, options, oldCache }: PluginOptions) => {
             bgs = await Promise.all(tasks);
             // file is NOT generate in sequence, mark index & sort it after all file is generated
             bgs.sort((a, b) => a.ind - b.ind);
-            cache[filePath].bgs = bgsResource;
+            // cache[filePath].bgs = bgsResource;
+            Object.assign(currentOption, {
+              bgsResource,
+              sliceArr,
+            });
           } catch (err) {
             bgs = [
               {
@@ -243,7 +302,7 @@ export default ({ loaderContext, options, oldCache }: PluginOptions) => {
             ? getTemplate(sepTemplate, _context, "../../template-sep.hbs")
             : getTemplate(template, _context, "../../template.hbs");
           if (handlebarsHelpers) {
-            handlebars.registerHelper(handlebarsHelpers)
+            handlebars.registerHelper(handlebarsHelpers);
           }
           const _template = handlebars.compile(
             fs.readFileSync(templatePath, "utf-8")
@@ -259,11 +318,11 @@ export default ({ loaderContext, options, oldCache }: PluginOptions) => {
             )
           );
           if (isSep) {
-            decl.parent.after(localCss)
+            decl.parent.after(localCss);
           } else {
             decl.after(localCss);
           }
-         
+
           decl.remove();
         }
       },

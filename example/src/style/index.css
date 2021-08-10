@@ -23,5 +23,5 @@
 #app3 {
   display: flex;
   flex-direction: column;
-  long-bg:  url(@assets/long-3.png) 375 520, 325, 333,880, 550, 1000,900,650,920, 988 true;
+  long-bg:  url(@assets/long-1.png) 375 520, 325, 333,880, 550, 1000,900,650,920, 988 true;
 }
