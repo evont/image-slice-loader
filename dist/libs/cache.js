@@ -1,6 +1,6 @@
 "use strict";
 exports.__esModule = true;
-exports.setCache = exports.getCache = exports.invalidCache = void 0;
+exports.invalidCache = exports.setCache = exports.getImageCache = exports.compareCache = void 0;
 var findCacheDir = require("find-cache-dir");
 var os_1 = require("os");
 var path = require("path");
@@ -8,30 +8,68 @@ var fs = require("fs-extra");
 var constant_1 = require("./constant");
 var cacheDirectory = findCacheDir({ name: constant_1.LOADER_NAME }) || os_1.tmpdir();
 var cachePath = path.join(cacheDirectory, constant_1.CACHE_NAME);
-function invalidCache(newCache, oldCache) {
-    if (!oldCache)
-        return;
-    var oKeys = Object.keys(oldCache);
-    oKeys.forEach(function (key) {
-        var _a, _b;
-        if (!(key in newCache)) {
-            (_b = (_a = oldCache[key]) === null || _a === void 0 ? void 0 : _a.bgs) === null || _b === void 0 ? void 0 : _b.map(function (bg) {
-                try {
-                    fs.removeSync(bg);
-                }
-                catch (err) {
-                    void err;
-                }
-            });
+function removeOutput(bgs) {
+    bgs === null || bgs === void 0 ? void 0 : bgs.forEach(function (bg) {
+        try {
+            fs.removeSync(bg.filePath);
+        }
+        catch (err) {
+            void err;
         }
     });
 }
-exports.invalidCache = invalidCache;
-function getCache() {
-    return fs.readJsonSync(cachePath, { throws: false });
+function compareCache(newCache, oldCache) {
+    if (!oldCache)
+        return;
+    for (var k in oldCache) {
+        if (k in newCache) {
+            var oldOpt = oldCache[k].options;
+            var newOpt = newCache[k].options;
+            for (var j in oldOpt) {
+                if (j in newOpt) {
+                    void 0;
+                }
+                else {
+                    removeOutput(oldOpt[j].bgsResource);
+                    delete oldOpt[j];
+                }
+            }
+        }
+        else {
+            for (var j in oldCache[k].options) {
+                removeOutput(oldCache[k].options[j].bgsResource);
+            }
+            delete oldCache[k];
+        }
+    }
 }
-exports.getCache = getCache;
+exports.compareCache = compareCache;
+var tmpCache;
+function getCache() {
+    if (tmpCache) {
+        return tmpCache;
+    }
+    else {
+        tmpCache = fs.readJsonSync(cachePath, { throws: false });
+        return tmpCache;
+    }
+}
+function getImageCache(imgHash, optionHash) {
+    var cache = getCache();
+    if (cache && imgHash in cache) {
+        var options = cache[imgHash].options;
+        if (optionHash in options) {
+            return cache[imgHash];
+        }
+    }
+}
+exports.getImageCache = getImageCache;
 function setCache(data) {
     fs.outputJsonSync(cachePath, data);
 }
 exports.setCache = setCache;
+function invalidCache(newCache) {
+    var oldCache = getCache();
+    compareCache(newCache, oldCache);
+}
+exports.invalidCache = invalidCache;

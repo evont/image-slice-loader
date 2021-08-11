@@ -14,7 +14,6 @@ var schema_1 = require("./schema");
 function mergeOptions(options) {
     var mergeOption = Object.assign({
         property: "long-bg",
-        clearOutput: true,
         outputPath: "./slice"
     }, options);
     schema_utils_1.validate(schema_1["default"], mergeOption, {
@@ -32,18 +31,16 @@ function loader(source, meta) {
             to: this.resourcePath,
             from: this.resourcePath
         };
-        var oldCache_1 = cache_1.getCache();
         var _a = plugin_1["default"]({
             loaderContext: this,
-            options: options,
-            oldCache: oldCache_1
+            options: options
         }), cache_2 = _a.cache, PostcssPlugin = _a.PostcssPlugin;
         postcss_1["default"](PostcssPlugin)
             .process(source, pcOptions)
             .then(function (result) {
             var map = result.map && result.map.toJSON();
             // console.log(cache);
-            cache_1.invalidCache(cache_2, oldCache_1);
+            cache_1.invalidCache(cache_2);
             cache_1.setCache(cache_2);
             callback(null, result.css, map);
         })["catch"](function (error) {

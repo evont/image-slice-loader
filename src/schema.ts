@@ -13,10 +13,6 @@ export default {
       type: "string" as const,
       description: "output path of slice images"
     },
-    clearOutput: {
-      type: "boolean" as const,
-      description: "whether clean output images or not before generate new slice images"
-    },
     template: {
       type: "string" as const,
       description: "Template of virtual property transformed local CSS. It accepts template content instead of a template file path"
