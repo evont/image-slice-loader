@@ -4,7 +4,7 @@ import { validate } from "schema-utils";
 
 import getPlugin from "./libs/plugin";
 import { LOADER_NAME } from "./libs/constant";
-import { getCache, setCache, invalidCache } from "./libs/cache";
+import { invalidCache, setCache } from "./libs/cache";
 import { LoaderOptions } from "./type";
 import schema from "./schema";
 
@@ -17,7 +17,6 @@ function mergeOptions(options: LoaderOptions): LoaderOptions {
   const mergeOption = Object.assign(
     {
       property: "long-bg",
-      clearOutput: true,
       outputPath: "./slice",
     },
     options
@@ -47,8 +46,8 @@ export default function loader(source, meta) {
       .then((result) => {
         const map = result.map && result.map.toJSON();
         // console.log(cache);
-        // invalidCache(cache, oldCache);
-
+        invalidCache(cache);
+        
         setCache(cache);
         callback(null, result.css, map);
       })

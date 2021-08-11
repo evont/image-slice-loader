@@ -14,7 +14,6 @@ var schema_1 = require("./schema");
 function mergeOptions(options) {
     var mergeOption = Object.assign({
         property: "long-bg",
-        clearOutput: true,
         outputPath: "./slice"
     }, options);
     schema_utils_1.validate(schema_1["default"], mergeOption, {
@@ -41,7 +40,7 @@ function loader(source, meta) {
             .then(function (result) {
             var map = result.map && result.map.toJSON();
             // console.log(cache);
-            // invalidCache(cache, oldCache);
+            cache_1.invalidCache(cache_2);
             cache_1.setCache(cache_2);
             callback(null, result.css, map);
         })["catch"](function (error) {

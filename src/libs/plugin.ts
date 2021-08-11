@@ -15,7 +15,7 @@ import {
 } from "./util";
 import { PluginOptions } from "../type";
 import { ISizeCalculationResult } from "image-size/dist/types/interface";
-import { getCacheV2 } from "./cache";
+import { getImageCache } from "./cache";
 
 function getBgHash(filePath) {
   const buffer = fs.readFileSync(filePath);
@@ -42,7 +42,6 @@ export default ({ loaderContext, options }: PluginOptions) => {
     property,
     output,
     outputPath,
-    clearOutput,
     template,
     sepTemplate,
     handlebarsHelpers,
@@ -76,6 +75,9 @@ export default ({ loaderContext, options }: PluginOptions) => {
       realOutput = path.resolve(_context, realOutput);
     }
 
+    const hasAlreadyOutput = fs.pathExistsSync(realOutput);
+    fs.ensureDirSync(realOutput);
+    const oldCacheOption = {};
     return {
       postcssPlugin: "image-slice-parser",
       async Declaration(decl) {
@@ -114,7 +116,6 @@ export default ({ loaderContext, options }: PluginOptions) => {
           const urlParse = path.parse(url);
           let filePath;
 
-          await fs.ensureDir(realOutput);
 
           try {
             filePath = await new Promise<string>((resolve, reject) =>
@@ -143,17 +144,22 @@ export default ({ loaderContext, options }: PluginOptions) => {
           let sliceArr = [];
           let imgWidth;
           let imgHeight;
-          const oldCache = getCacheV2(fileHash, optionHash);
+          let oldCache = hasAlreadyOutput && getImageCache(fileHash, optionHash);
           const currentOption = {};
           let options = {};
           if (oldCache) {
-            console.log("oldCache", oldCache);
             const {
               options: _options,
               imgWidth: _imgWidth,
               imgHeight: _imgHeight,
             } = oldCache;
-            options = _options;
+
+            oldCacheOption[fileHash] = Object.assign(oldCacheOption[fileHash] || {}, {
+              options: Object.assign(oldCacheOption[fileHash]?.options || {}, {
+                [optionHash]: _options[optionHash]
+              }),
+            })
+            options = oldCacheOption[fileHash].options;
             const { bgsResource: _bgsResource, sliceArr: _sliceArr } =
               options[optionHash];
             bgsResource = _bgsResource;
@@ -199,7 +205,7 @@ export default ({ loaderContext, options }: PluginOptions) => {
           let bgs = [];
           const mtMap = new Map();
           const tasks = sliceArr.map((slice, ind) => {
-            const itemName = getOutput(output, urlParse.name, ind, fileHash.substr(0, 5));
+            const itemName = getOutput(output, urlParse.name, ind, optionHash.substr(0, 5));
             const itemBase = `${itemName}${fileExt}`;
             const resultPath = path.resolve(realOutput, itemBase);
 
@@ -213,12 +219,12 @@ export default ({ loaderContext, options }: PluginOptions) => {
               prm = Promise.resolve();
               // console.log("use cache to prm");
             } else {
-              console.log("sharppp")
               bgsResource.push({
                 ind,
                 url,
                 offsetX,
                 offsetY,
+                filePath: resultPath
               });
               prm = sharp(filePath)
                 .extract({

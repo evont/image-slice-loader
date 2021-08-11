@@ -1,11 +1,10 @@
 export interface LoaderOptions {
   property?: string;
+  output?: (name: string, index: number) => string | string;
   outputPath?: string;
-  clearOutput?: boolean;
   template?: string;
   sepTemplate?: string;
   handlebarsHelpers?: Record<string, () => any>;
-  output?: (name: string, index: number) => string | string;
 }
 export interface PluginOptions {
   loaderContext: any,
