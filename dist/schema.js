@@ -15,17 +15,13 @@ exports["default"] = {
             type: "string",
             description: "output path of slice images"
         },
-        clearOutput: {
-            type: "boolean",
-            description: "whether clean output images or not before generate new slice images"
-        },
         template: {
             type: "string",
-            description: "Template of virtual property transformed local CSS. It accepts template content instead of a template file path"
+            description: "Template of virtual property transformed local CSS."
         },
         sepTemplate: {
             type: "string",
-            description: "Template of virtual property transformed local CSS. It accepts template content instead of a template file path"
+            description: "Template of virtual property transformed local CSS in seperate way."
         },
         handlebarsHelpers: {
             type: "object",

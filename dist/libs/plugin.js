@@ -54,6 +54,7 @@ var fs = require("fs-extra");
 var handlebars = require("handlebars");
 var crypto_1 = require("crypto");
 var util_1 = require("./util");
+var cache_1 = require("./cache");
 function getBgHash(filePath) {
     var buffer = fs.readFileSync(filePath);
     return crypto_1.createHash("md5").update(buffer).digest("hex");
@@ -74,9 +75,9 @@ function getTemplate(template, context, fallback) {
     return templatePath;
 }
 exports["default"] = (function (_a) {
-    var loaderContext = _a.loaderContext, options = _a.options, oldCache = _a.oldCache;
+    var loaderContext = _a.loaderContext, options = _a.options;
     var cache = {};
-    var property = options.property, output = options.output, outputPath = options.outputPath, clearOutput = options.clearOutput, template = options.template, sepTemplate = options.sepTemplate, handlebarsHelpers = options.handlebarsHelpers;
+    var property = options.property, output = options.output, outputPath = options.outputPath, template = options.template, sepTemplate = options.sepTemplate, handlebarsHelpers = options.handlebarsHelpers;
     var PostcssPlugin = function () {
         var reg = /url\(["']?(.*?)["']?\)/;
         var compilerOptions = loaderContext._compiler.options;
@@ -98,17 +99,22 @@ exports["default"] = (function (_a) {
         // if not alias or not absolute path, transform into path relate to webpack context
         if (!path.isAbsolute(realOutput)) {
             realOutput = path.resolve(_context, realOutput);
+            outputPath = path.resolve(_context, outputPath);
         }
+        var hasAlreadyOutput = fs.pathExistsSync(realOutput);
+        fs.ensureDirSync(realOutput);
+        var oldCacheOption = {};
         return {
             postcssPlugin: "image-slice-parser",
             Declaration: function (decl) {
                 var _a, _b, _c;
                 return __awaiter(this, void 0, void 0, function () {
-                    var formateVal, valArr, url_1, bgSize, slice, direction, isSep, tmp, isRow_1, urlParse_1, filePath_1, err_1, fileExt_1, dimension, imgWidth_1, imgHeight_1, imgSize, sliceArr_1, offsetX_1, offsetY_1, scaleX_1, scaleY_1, realWidth, realHeight, bgs, bgsResource_1, mtMap_1, tasks, err_2, templatePath, _template, localCss;
-                    return __generator(this, function (_d) {
-                        switch (_d.label) {
+                    var formateVal, valArr, url_1, bgSize, slice, direction, isSep, tmp, isRow_1, urlParse_1, filePath_1, err_1, fileExt_1, fileHash, optionHash_1, useCache_1, bgsResource_1, sliceArr_1, imgWidth_1, imgHeight_1, oldCache, currentOption, options_1, _options, _imgWidth, _imgHeight, _d, _bgsResource, _sliceArr, dimension, imgSize, offsetX_1, offsetY_1, scaleX_1, scaleY_1, realWidth, realHeight, bgs, mtMap_1, tasks, err_2, templatePath, _template, localCss;
+                    var _e, _f;
+                    return __generator(this, function (_g) {
+                        switch (_g.label) {
                             case 0:
-                                if (!(decl.prop === property)) return [3 /*break*/, 11];
+                                if (!(decl.prop === property)) return [3 /*break*/, 12];
                                 formateVal = decl.value.replace(/(\d+,)\s?(?=\d)/g, "$1");
                                 valArr = formateVal.split(" ");
                                 url_1 = ((_a = reg.exec(valArr[0])) === null || _a === void 0 ? void 0 : _a[1]) || "";
@@ -137,54 +143,73 @@ exports["default"] = (function (_a) {
                                 if (!url_1)
                                     return [2 /*return*/];
                                 urlParse_1 = path.parse(url_1);
-                                return [4 /*yield*/, fs.ensureDir(realOutput)];
+                                _g.label = 1;
                             case 1:
-                                _d.sent();
-                                _d.label = 2;
-                            case 2:
-                                _d.trys.push([2, 4, , 5]);
+                                _g.trys.push([1, 3, , 4]);
                                 return [4 /*yield*/, new Promise(function (resolve, reject) {
                                         return loaderContext.resolve(loaderContext.context, url_1, function (err, result) {
                                             return err ? reject(err) : resolve(result);
                                         });
                                     })];
+                            case 2:
+                                filePath_1 = _g.sent();
+                                return [3 /*break*/, 4];
                             case 3:
-                                filePath_1 = _d.sent();
-                                return [3 /*break*/, 5];
-                            case 4:
-                                err_1 = _d.sent();
+                                err_1 = _g.sent();
                                 throw new Error(url_1 + " can't be loaded, Please use a correct file path");
-                            case 5:
+                            case 4:
                                 if (!filePath_1)
                                     return [2 /*return*/];
-                                // TODO: update cache rule to match same file with different slice rule
-                                cache[filePath_1] = {
-                                    hash: getBgHash(filePath_1)
-                                };
-                                if (clearOutput) {
-                                    if (oldCache && oldCache[filePath_1]) {
-                                        (_c = (_b = oldCache[filePath_1]) === null || _b === void 0 ? void 0 : _b.bgs) === null || _c === void 0 ? void 0 : _c.map(function (bg) {
-                                            try {
-                                                fs.removeSync(bg);
-                                            }
-                                            catch (err) {
-                                                void err;
-                                            }
-                                        });
-                                    }
-                                }
                                 fileExt_1 = path.extname(filePath_1);
+                                fileHash = getBgHash(filePath_1);
+                                optionHash_1 = crypto_1.createHash("md5")
+                                    .update("" + direction + slice.join(","), "utf-8")
+                                    .digest("hex");
+                                useCache_1 = false;
+                                bgsResource_1 = [];
+                                sliceArr_1 = [];
+                                oldCache = hasAlreadyOutput && cache_1.getImageCache(fileHash, optionHash_1);
+                                currentOption = {};
+                                options_1 = {};
+                                if (!oldCache) return [3 /*break*/, 5];
+                                _options = oldCache.options, _imgWidth = oldCache.imgWidth, _imgHeight = oldCache.imgHeight;
+                                oldCacheOption[fileHash] = Object.assign(oldCacheOption[fileHash] || {}, {
+                                    options: Object.assign(((_b = oldCacheOption[fileHash]) === null || _b === void 0 ? void 0 : _b.options) || {}, (_e = {},
+                                        _e[optionHash_1] = _options[optionHash_1],
+                                        _e))
+                                });
+                                options_1 = oldCacheOption[fileHash].options;
+                                _d = options_1[optionHash_1], _bgsResource = _d.bgsResource, _sliceArr = _d.sliceArr;
+                                bgsResource_1 = _bgsResource;
+                                sliceArr_1 = _sliceArr;
+                                imgWidth_1 = _imgWidth;
+                                imgHeight_1 = _imgHeight;
+                                useCache_1 = true;
+                                return [3 /*break*/, 7];
+                            case 5:
+                                options_1 = (_f = {},
+                                    _f[optionHash_1] = currentOption,
+                                    _f);
                                 return [4 /*yield*/, new Promise(function (resolve) {
                                         image_size_1["default"](filePath_1, function (err, ds) {
                                             resolve(ds);
                                         });
                                     })];
                             case 6:
-                                dimension = _d.sent();
+                                dimension = _g.sent();
                                 imgWidth_1 = dimension.width;
                                 imgHeight_1 = dimension.height;
+                                _g.label = 7;
+                            case 7:
+                                cache[fileHash] = Object.assign(cache[fileHash] || {}, {
+                                    options: Object.assign(((_c = cache[fileHash]) === null || _c === void 0 ? void 0 : _c.options) || {}, options_1)
+                                }, {
+                                    imgWidth: imgWidth_1,
+                                    imgHeight: imgHeight_1
+                                });
                                 imgSize = isRow_1 ? imgWidth_1 : imgHeight_1;
-                                sliceArr_1 = util_1.getSlices(imgSize, slice);
+                                if (!sliceArr_1.length)
+                                    sliceArr_1 = util_1.getSlices(imgSize, slice);
                                 offsetX_1 = 0;
                                 offsetY_1 = 0;
                                 scaleX_1 = !isRow_1 && bgSize ? bgSize / imgWidth_1 : 1;
@@ -192,25 +217,42 @@ exports["default"] = (function (_a) {
                                 realWidth = imgWidth_1 * (isRow_1 ? scaleY_1 : scaleX_1);
                                 realHeight = imgHeight_1 * (isRow_1 ? scaleY_1 : scaleX_1);
                                 bgs = [];
-                                bgsResource_1 = [];
                                 mtMap_1 = new Map();
                                 tasks = sliceArr_1.map(function (slice, ind) {
-                                    var itemName = util_1.getOutput(output, urlParse_1.name, ind);
+                                    var _a;
+                                    var itemName = util_1.getOutput(output, urlParse_1.name, ind, optionHash_1.substr(0, 5));
                                     var itemBase = "" + itemName + fileExt_1;
                                     var resultPath = path.resolve(realOutput, itemBase);
                                     var extraWidth = isRow_1 ? slice : imgWidth_1;
                                     var extraHeight = isRow_1 ? imgHeight_1 : slice;
+                                    var url = path.join(outputPath, itemBase);
                                     mtMap_1.set(ind, { offsetX: offsetX_1, offsetY: offsetY_1 });
-                                    bgsResource_1.push(resultPath);
-                                    var task = sharp(filePath_1)
-                                        .extract({
-                                        left: offsetX_1,
-                                        top: offsetY_1,
-                                        width: extraWidth,
-                                        height: extraHeight
-                                    })
-                                        .toFile(resultPath)
-                                        .then(function () {
+                                    var prm;
+                                    var hasFile = fs.pathExistsSync(resultPath) && ((_a = bgsResource_1.find(function (bg) { return bg.ind === ind; })) === null || _a === void 0 ? void 0 : _a.filePath) === resultPath;
+                                    if (useCache_1 && hasFile) {
+                                        prm = Promise.resolve();
+                                        // console.log("use cache to prm");
+                                    }
+                                    else {
+                                        if (!useCache_1) {
+                                            bgsResource_1.push({
+                                                ind: ind,
+                                                url: url,
+                                                offsetX: offsetX_1,
+                                                offsetY: offsetY_1,
+                                                filePath: resultPath
+                                            });
+                                        }
+                                        prm = sharp(filePath_1)
+                                            .extract({
+                                            left: offsetX_1,
+                                            top: offsetY_1,
+                                            width: extraWidth,
+                                            height: extraHeight
+                                        })
+                                            .toFile(resultPath);
+                                    }
+                                    var task = prm.then(function () {
                                         var offset = mtMap_1.get(ind);
                                         var left = offset.offsetX;
                                         var top = offset.offsetY;
@@ -238,25 +280,31 @@ exports["default"] = (function (_a) {
                                         }), {
                                             ind: ind,
                                             isLast: ind === sliceArr_1.length - 1,
-                                            url: path.join(outputPath, itemBase)
+                                            url: url,
+                                            offsetX: offsetX_1,
+                                            offsetY: offsetY_1
                                         });
                                     });
                                     offsetX_1 += isRow_1 ? extraWidth : 0;
                                     offsetY_1 += isRow_1 ? 0 : extraHeight;
                                     return task;
                                 });
-                                _d.label = 7;
-                            case 7:
-                                _d.trys.push([7, 9, , 10]);
-                                return [4 /*yield*/, Promise.all(tasks)];
+                                _g.label = 8;
                             case 8:
-                                bgs = _d.sent();
+                                _g.trys.push([8, 10, , 11]);
+                                return [4 /*yield*/, Promise.all(tasks)];
+                            case 9:
+                                bgs = _g.sent();
                                 // file is NOT generate in sequence, mark index & sort it after all file is generated
                                 bgs.sort(function (a, b) { return a.ind - b.ind; });
-                                cache[filePath_1].bgs = bgsResource_1;
-                                return [3 /*break*/, 10];
-                            case 9:
-                                err_2 = _d.sent();
+                                // cache[filePath].bgs = bgsResource;
+                                Object.assign(currentOption, {
+                                    bgsResource: bgsResource_1,
+                                    sliceArr: sliceArr_1
+                                });
+                                return [3 /*break*/, 11];
+                            case 10:
+                                err_2 = _g.sent();
                                 bgs = [
                                     __assign({ isLast: true, ind: 0, url: url_1 }, util_1.transformPX({
                                         top: isRow_1 ? "center" : "top",
@@ -266,8 +314,8 @@ exports["default"] = (function (_a) {
                                     })),
                                 ];
                                 console.error(err_2);
-                                return [3 /*break*/, 10];
-                            case 10:
+                                return [3 /*break*/, 11];
+                            case 11:
                                 templatePath = isSep
                                     ? getTemplate(sepTemplate, _context, "../../template-sep.hbs")
                                     : getTemplate(template, _context, "../../template.hbs");
@@ -286,8 +334,8 @@ exports["default"] = (function (_a) {
                                     decl.after(localCss);
                                 }
                                 decl.remove();
-                                _d.label = 11;
-                            case 11: return [2 /*return*/];
+                                _g.label = 12;
+                            case 12: return [2 /*return*/];
                         }
                     });
                 });

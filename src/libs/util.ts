@@ -79,12 +79,12 @@ export function getSlices(size: number, arr: number[]): number[] {
 }
 
 
-export function getOutput(output: (name: string, index: number) => string | string, name: string, ind: number) {
+export function getOutput(output: ((name: string, index: number, hash: string) => string) | string, name: string, ind: number, hash: string) {
   let result: string;
   if (typeof output === "string") {
-    result = (output as string).replace(/\[name\]/g, name).replace(/\[index\]/g, `${ind}`);
+    result = (output as string).replace(/\[name\]/g, name).replace(/\[index\]/g, `${ind}`).replace(/\[hash\]/g, hash);
   } else {
-    result = output(name, ind)
+    result = output(name, ind, hash)
   }
   return result;
 }

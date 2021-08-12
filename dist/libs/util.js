@@ -69,13 +69,13 @@ function getSlices(size, arr) {
     return heights;
 }
 exports.getSlices = getSlices;
-function getOutput(output, name, ind) {
+function getOutput(output, name, ind, hash) {
     var result;
     if (typeof output === "string") {
-        result = output.replace(/\[name\]/g, name).replace(/\[index\]/g, "" + ind);
+        result = output.replace(/\[name\]/g, name).replace(/\[index\]/g, "" + ind).replace(/\[hash\]/g, hash);
     }
     else {
-        result = output(name, ind);
+        result = output(name, ind, hash);
     }
     return result;
 }
