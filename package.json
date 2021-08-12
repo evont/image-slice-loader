@@ -1,14 +1,16 @@
 {
   "name": "image-slice-loader",
   "version": "1.0.0",
-  "description": "a loader to slice long image & generate css",
+  "description": "a loader to slice long image & generate css background",
   "main": "dist/index.js",
   "scripts": {
     "start": "tsc -w",
     "build": "tsc"
   },
   "files": [
-    "dist"
+    "dist",
+    "template.hbs",
+    "template-sep.hbs"
   ],
   "repository": {
     "type": "git",

@@ -215,7 +215,8 @@ export default ({ loaderContext, options }: PluginOptions) => {
             mtMap.set(ind, { offsetX, offsetY });
 
             let prm;
-            if (useCache) {
+            const hasFile = fs.pathExistsSync(resultPath);
+            if (useCache && hasFile) {
               prm = Promise.resolve();
               // console.log("use cache to prm");
             } else {

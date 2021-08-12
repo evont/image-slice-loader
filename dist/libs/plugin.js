@@ -226,7 +226,8 @@ exports["default"] = (function (_a) {
                                     var url = path.join(outputPath, itemBase);
                                     mtMap_1.set(ind, { offsetX: offsetX_1, offsetY: offsetY_1 });
                                     var prm;
-                                    if (useCache_1) {
+                                    var hasFile = fs.pathExistsSync(resultPath);
+                                    if (useCache_1 && hasFile) {
                                         prm = Promise.resolve();
                                         // console.log("use cache to prm");
                                     }
