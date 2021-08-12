@@ -99,6 +99,7 @@ exports["default"] = (function (_a) {
         // if not alias or not absolute path, transform into path relate to webpack context
         if (!path.isAbsolute(realOutput)) {
             realOutput = path.resolve(_context, realOutput);
+            outputPath = path.resolve(_context, outputPath);
         }
         var hasAlreadyOutput = fs.pathExistsSync(realOutput);
         fs.ensureDirSync(realOutput);
@@ -218,6 +219,7 @@ exports["default"] = (function (_a) {
                                 bgs = [];
                                 mtMap_1 = new Map();
                                 tasks = sliceArr_1.map(function (slice, ind) {
+                                    var _a;
                                     var itemName = util_1.getOutput(output, urlParse_1.name, ind, optionHash_1.substr(0, 5));
                                     var itemBase = "" + itemName + fileExt_1;
                                     var resultPath = path.resolve(realOutput, itemBase);
@@ -226,19 +228,21 @@ exports["default"] = (function (_a) {
                                     var url = path.join(outputPath, itemBase);
                                     mtMap_1.set(ind, { offsetX: offsetX_1, offsetY: offsetY_1 });
                                     var prm;
-                                    var hasFile = fs.pathExistsSync(resultPath);
+                                    var hasFile = fs.pathExistsSync(resultPath) && ((_a = bgsResource_1.find(function (bg) { return bg.ind === ind; })) === null || _a === void 0 ? void 0 : _a.filePath) === resultPath;
                                     if (useCache_1 && hasFile) {
                                         prm = Promise.resolve();
                                         // console.log("use cache to prm");
                                     }
                                     else {
-                                        bgsResource_1.push({
-                                            ind: ind,
-                                            url: url,
-                                            offsetX: offsetX_1,
-                                            offsetY: offsetY_1,
-                                            filePath: resultPath
-                                        });
+                                        if (!useCache_1) {
+                                            bgsResource_1.push({
+                                                ind: ind,
+                                                url: url,
+                                                offsetX: offsetX_1,
+                                                offsetY: offsetY_1,
+                                                filePath: resultPath
+                                            });
+                                        }
                                         prm = sharp(filePath_1)
                                             .extract({
                                             left: offsetX_1,

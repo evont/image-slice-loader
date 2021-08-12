@@ -79,7 +79,7 @@ export function getSlices(size: number, arr: number[]): number[] {
 }
 
 
-export function getOutput(output: (name: string, index: number, hash: string) => string | string, name: string, ind: number, hash: string) {
+export function getOutput(output: ((name: string, index: number, hash: string) => string) | string, name: string, ind: number, hash: string) {
   let result: string;
   if (typeof output === "string") {
     result = (output as string).replace(/\[name\]/g, name).replace(/\[index\]/g, `${ind}`).replace(/\[hash\]/g, hash);

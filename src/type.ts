@@ -1,6 +1,6 @@
 export interface LoaderOptions {
   property?: string;
-  output?: (name: string, index: number) => string | string;
+  output?: string | ((name: string, index: number, hash: string) => string);
   outputPath?: string;
   template?: string;
   sepTemplate?: string;

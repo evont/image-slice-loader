@@ -73,6 +73,7 @@ export default ({ loaderContext, options }: PluginOptions) => {
     // if not alias or not absolute path, transform into path relate to webpack context
     if (!path.isAbsolute(realOutput)) {
       realOutput = path.resolve(_context, realOutput);
+      outputPath = path.resolve(_context, outputPath);
     }
 
     const hasAlreadyOutput = fs.pathExistsSync(realOutput);
@@ -115,8 +116,6 @@ export default ({ loaderContext, options }: PluginOptions) => {
 
           const urlParse = path.parse(url);
           let filePath;
-
-
           try {
             filePath = await new Promise<string>((resolve, reject) =>
               loaderContext.resolve(loaderContext.context, url, (err, result) =>
@@ -215,18 +214,21 @@ export default ({ loaderContext, options }: PluginOptions) => {
             mtMap.set(ind, { offsetX, offsetY });
 
             let prm;
-            const hasFile = fs.pathExistsSync(resultPath);
+            const hasFile = fs.pathExistsSync(resultPath) && bgsResource.find(bg => bg.ind === ind)?.filePath === resultPath;
             if (useCache && hasFile) {
               prm = Promise.resolve();
               // console.log("use cache to prm");
             } else {
-              bgsResource.push({
-                ind,
-                url,
-                offsetX,
-                offsetY,
-                filePath: resultPath
-              });
+              if (!useCache) {
+                bgsResource.push({
+                  ind,
+                  url,
+                  offsetX,
+                  offsetY,
+                  filePath: resultPath
+                });
+              }
+              
               prm = sharp(filePath)
                 .extract({
                   left: offsetX,
