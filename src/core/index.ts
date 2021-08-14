@@ -5,70 +5,83 @@ import * as fs from "fs-extra";
 import { SharpOption, SharpPicOption } from "../type";
 import { getSlices, getHash, getOutput } from "./util";
 
-async function sharpPic(image: Buffer | string, options: SharpPicOption) {
+function sharpPic(image: Buffer | string, options: SharpPicOption) {
   let { direction, slice } = options;
   if (typeof slice === "number") slice = [slice];
 
   const isRow = direction === "row";
+  try {
+    const dimension = sizeOf(image);
+    const { width: imgWidth, height: imgHeight, type } = dimension;
 
-  const dimension = await sizeOf(image);
-  const { width: imgWidth, height: imgHeight, type } = dimension;
+    const imgSize = isRow ? imgWidth : imgHeight;
+    const sliceArr = getSlices(imgSize, slice);
+    // console.log(sliceArr);
+    let offsetX = 0;
+    let offsetY = 0;
+    return {
+      dimension,
+      image,
+      tasks: Promise.all(
+        sliceArr.map((slice, ind) => {
+          const width = isRow ? slice : imgWidth;
+          const height = isRow ? imgHeight : slice;
+          const left = offsetX;
+          const top = offsetY;
 
-  const imgSize = isRow ? imgWidth : imgHeight;
-  const sliceArr = getSlices(imgSize, slice);
-  // console.log(sliceArr);
-  let offsetX = 0;
-  let offsetY = 0;
-  return {
-    dimension,
-    tasks: Promise.all(
-      sliceArr.map((slice) => {
-        const width = isRow ? slice : imgWidth;
-        const height = isRow ? imgHeight : slice;
-        const left = offsetX;
-        const top = offsetY;
-
-        offsetX += isRow ? width : 0;
-        offsetY += isRow ? 0 : height;
-        return sharp(image).extract({
-          left,
-          top,
-          width,
-          height,
-        });
-      })
-    ),
-  };
+          offsetX += isRow ? width : 0;
+          offsetY += isRow ? 0 : height;
+          const info = {
+            left,
+            top,
+            width,
+            height,
+          };
+          return {
+            info,
+            ind,
+            extra: sharp(image).extract(info),
+          };
+        })
+      ),
+    };
+  } catch (e) {
+    throw e;
+  }
 }
 
-export default async (
+export function sharps(
+  images: { image: Buffer | string; options: SharpPicOption }[]
+) {
+  return images
+    .map(({ image, options }) => sharpPic(image, options))
+    .filter(Boolean);
+}
+
+export async function outputSharp(
   images: { image: Buffer | string; options: SharpPicOption }[],
   options: SharpOption
-) => {
+) {
   const { outputPath, output } = options;
   fs.ensureDirSync(outputPath);
-  images.forEach(async (item, ind) => {
-    let result;
-    const { image, options } = item;
-    let name = Buffer.isBuffer(image)
-      ? getHash(image).substr(0, 7)
-      : path.basename(image, path.extname(image));
-    try {
-      result = await sharpPic(image, options);
-      const { dimension, tasks } = result;
-      (await tasks).forEach(async (item, index) => {
-        const { data, info } = await item.toBuffer({ resolveWithObject: true });
+  try {
+    const tasks = sharps(images);
+    tasks.forEach(async (result, ind) => {
+      const { dimension, tasks, image } = await result;
+      const name = Buffer.isBuffer(image)
+        ? getHash(image).substr(0, 7)
+        : path.basename(image, path.extname(image));
+      (await tasks).map(async (task, index) => {
+        const { info, extra } = task;
+        const { data } = await extra.toBuffer({ resolveWithObject: true });
         const itemHash = getHash(data);
         const fileName = getOutput(output, name, ind, itemHash);
         const itemBase = `${fileName}.${dimension.type}`;
         const resultPath = path.resolve(outputPath, itemBase);
-        await item.toFile(resultPath);
-
-        // console.log(item);
-        // item.toFile(path.resolve(outputPath, ))
+        await extra.toFile(resultPath);
       });
-    } catch (e) {
-      console.error(e);
-    }
-  });
-};
+    });
+  } catch (e) {
+    throw e;
+  }
+}
