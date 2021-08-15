@@ -17,6 +17,10 @@ export default {
       instanceof: "Function" as const,
       description: "Template of virtual property transformed local CSS.",
     },
+    cachePath: {
+      type: "string" as const,
+      description: "cache path of slice images",
+    }
   },
   additionalProperties: false,
 };

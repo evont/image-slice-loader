@@ -1,5 +1,5 @@
 "use strict";
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var loader_utils_1 = require("loader-utils");
 var postcss_1 = require("postcss");
 var schema_utils_1 = require("schema-utils");
@@ -13,26 +13,29 @@ function mergeOptions(options) {
         outputPath: "./slice",
         output: "[hash]_[index]"
     }, options);
-    schema_utils_1.validate(schema_1["default"], mergeOption, {
-        name: constant_1.LOADER_NAME
+    schema_utils_1.validate(schema_1.default, mergeOption, {
+        name: constant_1.LOADER_NAME,
     });
     return mergeOption;
 }
-function loader(source, meta) {
+function loader(source) {
     var callback = this.async();
     this.cacheable();
     var options = {};
     try {
         options = mergeOptions(loader_utils_1.getOptions(this) || {});
+        if (options.cachePath) {
+            cache_1.setCachePath(options.cachePath);
+        }
         var pcOptions = {
             to: this.resourcePath,
-            from: this.resourcePath
+            from: this.resourcePath,
         };
-        var _a = plugin_1["default"]({
+        var _a = plugin_1.default({
             loaderContext: this,
-            options: options
+            options: options,
         }), cache_2 = _a.cache, PostcssPlugin = _a.PostcssPlugin;
-        postcss_1["default"](PostcssPlugin)
+        postcss_1.default(PostcssPlugin)
             .process(source, pcOptions)
             .then(function (result) {
             var map = result.map && result.map.toJSON();
@@ -40,7 +43,8 @@ function loader(source, meta) {
             cache_1.invalidCache(cache_2);
             cache_1.setCache(cache_2);
             callback(null, result.css, map);
-        })["catch"](function (error) {
+        })
+            .catch(function (error) {
             callback(error);
         });
     }
@@ -48,4 +52,4 @@ function loader(source, meta) {
         callback(error);
     }
 }
-exports["default"] = loader;
+exports.default = loader;

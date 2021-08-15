@@ -1,6 +1,7 @@
 {
   "target": "es5",
   "compilerOptions": {
+    "target": "es5",
     "lib":["es2018", "dom"],
     "module": "commonjs",
     "sourceMap": false,

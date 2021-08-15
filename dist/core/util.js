@@ -1,18 +1,7 @@
 "use strict";
-exports.__esModule = true;
-exports.getHash = exports.getOutput = exports.getSlices = exports.transformPX = exports.useNumOnly = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getHash = exports.getOutput = exports.getSlices = void 0;
 var crypto_1 = require("crypto");
-function useNumOnly(val, defaultVal) {
-    if (defaultVal === void 0) { defaultVal = 0; }
-    return val && Number.isNaN(+val) ? defaultVal : +val;
-}
-exports.useNumOnly = useNumOnly;
-function transformPX(obj, pick) {
-    return (pick || Object.keys(obj)).reduce(function (prev, val) { return (val in obj &&
-        (prev[val] = Number.isNaN(+obj[val]) ? obj[val] : obj[val] + "px"),
-        prev); }, {});
-}
-exports.transformPX = transformPX;
 function getSlices(size, arr) {
     if (!arr.length)
         return [size];

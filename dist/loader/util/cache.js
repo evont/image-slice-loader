@@ -1,13 +1,17 @@
 "use strict";
-exports.__esModule = true;
-exports.invalidCache = exports.setCache = exports.getImageCache = exports.compareCache = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.setCachePath = exports.invalidCache = exports.setCache = exports.getImageCache = exports.compareCache = void 0;
 var findCacheDir = require("find-cache-dir");
 var os_1 = require("os");
 var path = require("path");
 var fs = require("fs-extra");
 var constant_1 = require("./constant");
-var cacheDirectory = findCacheDir({ name: constant_1.LOADER_NAME }) || os_1.tmpdir();
-var cachePath = path.join(cacheDirectory, constant_1.CACHE_NAME);
+var CACHE_CONFIG = {
+    cacheDirectory: findCacheDir({ name: constant_1.LOADER_NAME }) || os_1.tmpdir(),
+    get cachePath() {
+        return path.join(this.cacheDirectory, constant_1.CACHE_NAME);
+    }
+};
 function removeOutput(bgs) {
     bgs === null || bgs === void 0 ? void 0 : bgs.forEach(function (bg) {
         try {
@@ -50,22 +54,24 @@ function getCache() {
         return tmpCache;
     }
     else {
-        tmpCache = fs.readJsonSync(cachePath, { throws: false });
+        tmpCache = fs.readJsonSync(CACHE_CONFIG.cachePath, { throws: false });
         return tmpCache;
     }
 }
 function getImageCache(imgHash, optionHash) {
     var cache = getCache();
+    var result;
     if (cache && imgHash in cache) {
         var options = cache[imgHash].options;
         if (optionHash in options) {
-            return cache[imgHash];
+            result = cache[imgHash];
         }
     }
+    return result;
 }
 exports.getImageCache = getImageCache;
 function setCache(data) {
-    fs.outputJsonSync(cachePath, data);
+    fs.outputJsonSync(CACHE_CONFIG.cachePath, data);
 }
 exports.setCache = setCache;
 function invalidCache(newCache) {
@@ -73,3 +79,9 @@ function invalidCache(newCache) {
     compareCache(newCache, oldCache);
 }
 exports.invalidCache = invalidCache;
+function setCachePath(path) {
+    if (!path)
+        return;
+    CACHE_CONFIG.cacheDirectory = path;
+}
+exports.setCachePath = setCachePath;

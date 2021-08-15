@@ -4,7 +4,7 @@ import { validate } from "schema-utils";
 
 import getPlugin from "./plugin";
 import { LOADER_NAME } from "./util/constant";
-import { invalidCache, setCache } from "./util/cache";
+import { invalidCache, setCache, setCachePath } from "./util/cache";
 import { LoaderOptions } from "../type";
 import schema from "./schema";
 
@@ -22,12 +22,15 @@ function mergeOptions(options: LoaderOptions): LoaderOptions {
   });
   return mergeOption;
 }
-export default function loader(source, meta) {
+export default function loader(source) {
   const callback = this.async();
   this.cacheable();
-  let options = {};
+  let options: LoaderOptions = {};
   try {
     options = mergeOptions(getOptions(this) || {});
+    if (options.cachePath) {
+      setCachePath(options.cachePath)
+    }
     const pcOptions = {
       to: this.resourcePath,
       from: this.resourcePath,

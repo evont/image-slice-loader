@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.outputSharp = exports.sharps = void 0;
 var image_size_1 = require("image-size");
 var sharp = require("sharp");
@@ -43,12 +43,13 @@ var path = require("path");
 var fs = require("fs-extra");
 var util_1 = require("./util");
 function sharpPic(image, options) {
+    var _this = this;
     var direction = options.direction, slice = options.slice;
     if (typeof slice === "number")
         slice = [slice];
     var isRow = direction === "row";
     try {
-        var dimension = image_size_1["default"](image);
+        var dimension = image_size_1.default(image);
         var imgWidth_1 = dimension.width, imgHeight_1 = dimension.height, type = dimension.type;
         var imgSize = isRow ? imgWidth_1 : imgHeight_1;
         var sliceArr = util_1.getSlices(imgSize, slice);
@@ -58,25 +59,40 @@ function sharpPic(image, options) {
         return {
             dimension: dimension,
             image: image,
-            tasks: Promise.all(sliceArr.map(function (slice, ind) {
-                var width = isRow ? slice : imgWidth_1;
-                var height = isRow ? imgHeight_1 : slice;
-                var left = offsetX_1;
-                var top = offsetY_1;
-                offsetX_1 += isRow ? width : 0;
-                offsetY_1 += isRow ? 0 : height;
-                var info = {
-                    left: left,
-                    top: top,
-                    width: width,
-                    height: height
-                };
-                return {
-                    info: info,
-                    ind: ind,
-                    extra: sharp(image).extract(info)
-                };
-            }))
+            isRow: isRow,
+            sliceArr: sliceArr,
+            tasks: sliceArr.map(function (slice) { return __awaiter(_this, void 0, void 0, function () {
+                var width, height, left, top, info, extra, data, hash;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            width = isRow ? slice : imgWidth_1;
+                            height = isRow ? imgHeight_1 : slice;
+                            left = offsetX_1;
+                            top = offsetY_1;
+                            offsetX_1 += isRow ? width : 0;
+                            offsetY_1 += isRow ? 0 : height;
+                            info = {
+                                left: left,
+                                top: top,
+                                width: width,
+                                height: height,
+                            };
+                            extra = sharp(image).extract(info);
+                            return [4 /*yield*/, extra.toBuffer({ resolveWithObject: true })];
+                        case 1:
+                            data = (_a.sent()).data;
+                            hash = util_1.getHash(data);
+                            return [2 /*return*/, {
+                                    info: info,
+                                    slice: slice,
+                                    extra: extra,
+                                    hash: hash,
+                                    data: data
+                                }];
+                    }
+                });
+            }); }),
         };
     }
     catch (e) {
@@ -93,57 +109,60 @@ function sharps(images) {
 }
 exports.sharps = sharps;
 function outputSharp(images, options) {
-    return __awaiter(this, void 0, void 0, function () {
-        var outputPath, output, tasks;
+    var outputPath = options.outputPath, output = options.output, taskFilter = options.taskFilter;
+    fs.ensureDirSync(outputPath);
+    function deal(sharpsTask) {
         var _this = this;
-        return __generator(this, function (_a) {
-            outputPath = options.outputPath, output = options.output;
-            fs.ensureDirSync(outputPath);
-            try {
-                tasks = sharps(images);
-                tasks.forEach(function (result, ind) { return __awaiter(_this, void 0, void 0, function () {
-                    var _a, dimension, tasks, image, name;
-                    var _this = this;
-                    return __generator(this, function (_b) {
-                        switch (_b.label) {
-                            case 0: return [4 /*yield*/, result];
-                            case 1:
-                                _a = _b.sent(), dimension = _a.dimension, tasks = _a.tasks, image = _a.image;
-                                name = Buffer.isBuffer(image)
-                                    ? util_1.getHash(image).substr(0, 7)
-                                    : path.basename(image, path.extname(image));
-                                return [4 /*yield*/, tasks];
-                            case 2:
-                                (_b.sent()).map(function (task, index) { return __awaiter(_this, void 0, void 0, function () {
-                                    var info, extra, data, itemHash, fileName, itemBase, resultPath;
-                                    return __generator(this, function (_a) {
-                                        switch (_a.label) {
-                                            case 0:
-                                                info = task.info, extra = task.extra;
-                                                return [4 /*yield*/, extra.toBuffer({ resolveWithObject: true })];
-                                            case 1:
-                                                data = (_a.sent()).data;
-                                                itemHash = util_1.getHash(data);
-                                                fileName = util_1.getOutput(output, name, ind, itemHash);
-                                                itemBase = fileName + "." + dimension.type;
-                                                resultPath = path.resolve(outputPath, itemBase);
-                                                return [4 /*yield*/, extra.toFile(resultPath)];
-                                            case 2:
-                                                _a.sent();
-                                                return [2 /*return*/];
-                                        }
-                                    });
-                                }); });
-                                return [2 /*return*/];
-                        }
-                    });
-                }); });
-            }
-            catch (e) {
-                throw e;
-            }
-            return [2 /*return*/];
-        });
-    });
+        var dimension = sharpsTask.dimension, tasks = sharpsTask.tasks, image = sharpsTask.image, sliceArr = sharpsTask.sliceArr, isRow = sharpsTask.isRow;
+        var name = Buffer.isBuffer(image)
+            ? util_1.getHash(image).substr(0, 7)
+            : path.basename(image, path.extname(image));
+        return {
+            dimension: dimension,
+            isRow: isRow,
+            image: image,
+            sliceArr: sliceArr,
+            results: tasks.map(function (task, index) { return __awaiter(_this, void 0, void 0, function () {
+                var _a, info, extra, hash, fileName, itemBase, resultPath, filter;
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
+                        case 0: return [4 /*yield*/, task];
+                        case 1:
+                            _a = _b.sent(), info = _a.info, extra = _a.extra, hash = _a.hash;
+                            fileName = util_1.getOutput(output, name, index, hash);
+                            itemBase = fileName + "." + dimension.type;
+                            resultPath = path.resolve(outputPath, itemBase);
+                            filter = taskFilter && taskFilter({ info: info, hash: hash });
+                            if (filter) {
+                            }
+                            else {
+                            }
+                            // console.log(info);
+                            //  await extra.toFile(resultPath);
+                            return [2 /*return*/, {
+                                    resultPath: resultPath,
+                                    info: info,
+                                    index: index,
+                                    hash: hash
+                                }];
+                    }
+                });
+            }); }),
+        };
+    }
+    var isArray = Object.prototype.toString.call(images) === "[object Array]";
+    try {
+        if (isArray) {
+            var sharpsTasks = sharps(images);
+            return sharpsTasks.map(function (sharpsTask) { return deal(sharpsTask); });
+        }
+        else {
+            var _a = images, image = _a.image, options_1 = _a.options;
+            return deal(sharpPic(image, options_1));
+        }
+    }
+    catch (e) {
+        throw e;
+    }
 }
 exports.outputSharp = outputSharp;
