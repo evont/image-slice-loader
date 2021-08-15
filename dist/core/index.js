@@ -43,14 +43,13 @@ var path = require("path");
 var fs = require("fs-extra");
 var util_1 = require("./util");
 function sharpPic(image, options) {
-    var _this = this;
     var direction = options.direction, slice = options.slice;
     if (typeof slice === "number")
         slice = [slice];
     var isRow = direction === "row";
     try {
         var dimension = image_size_1.default(image);
-        var imgWidth_1 = dimension.width, imgHeight_1 = dimension.height, type = dimension.type;
+        var imgWidth_1 = dimension.width, imgHeight_1 = dimension.height;
         var imgSize = isRow ? imgWidth_1 : imgHeight_1;
         var sliceArr = util_1.getSlices(imgSize, slice);
         // console.log(sliceArr);
@@ -61,38 +60,30 @@ function sharpPic(image, options) {
             image: image,
             isRow: isRow,
             sliceArr: sliceArr,
-            tasks: sliceArr.map(function (slice) { return __awaiter(_this, void 0, void 0, function () {
-                var width, height, left, top, info, extra, data, hash;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            width = isRow ? slice : imgWidth_1;
-                            height = isRow ? imgHeight_1 : slice;
-                            left = offsetX_1;
-                            top = offsetY_1;
-                            offsetX_1 += isRow ? width : 0;
-                            offsetY_1 += isRow ? 0 : height;
-                            info = {
-                                left: left,
-                                top: top,
-                                width: width,
-                                height: height,
-                            };
-                            extra = sharp(image).extract(info);
-                            return [4 /*yield*/, extra.toBuffer({ resolveWithObject: true })];
-                        case 1:
-                            data = (_a.sent()).data;
-                            hash = util_1.getHash(data);
-                            return [2 /*return*/, {
-                                    info: info,
-                                    slice: slice,
-                                    extra: extra,
-                                    hash: hash,
-                                    data: data
-                                }];
-                    }
-                });
-            }); }),
+            tasks: sliceArr.map(function (slice, ind) {
+                var width = isRow ? slice : imgWidth_1;
+                var height = isRow ? imgHeight_1 : slice;
+                var left = offsetX_1;
+                var top = offsetY_1;
+                offsetX_1 += isRow ? width : 0;
+                offsetY_1 += isRow ? 0 : height;
+                var info = {
+                    left: left,
+                    top: top,
+                    width: width,
+                    height: height,
+                };
+                var hash = util_1.getHash([ind, left, top, width, height].join("-"));
+                // const extra = sharp(image).extract(info);
+                // const { data } = await extra.toBuffer({ resolveWithObject: true });
+                // const hash = getHash(data);
+                return {
+                    info: info,
+                    slice: slice,
+                    extra: function () { return sharp(image).extract(info); },
+                    hash: hash,
+                };
+            }),
         };
     }
     catch (e) {
@@ -109,7 +100,7 @@ function sharps(images) {
 }
 exports.sharps = sharps;
 function outputSharp(images, options) {
-    var outputPath = options.outputPath, output = options.output, taskFilter = options.taskFilter;
+    var outputPath = options.outputPath, output = options.output, urlPath = options.urlPath, cacheMatch = options.cacheMatch;
     fs.ensureDirSync(outputPath);
     function deal(sharpsTask) {
         var _this = this;
@@ -123,27 +114,33 @@ function outputSharp(images, options) {
             image: image,
             sliceArr: sliceArr,
             results: tasks.map(function (task, index) { return __awaiter(_this, void 0, void 0, function () {
-                var _a, info, extra, hash, fileName, itemBase, resultPath, filter;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0: return [4 /*yield*/, task];
+                var info, extra, hash, matchItem, extraFn, data, fileHash, fileName, itemBase, resultPath, url;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            info = task.info, extra = task.extra, hash = task.hash;
+                            matchItem = cacheMatch && cacheMatch({ info: info, hash: hash });
+                            if (!matchItem) return [3 /*break*/, 1];
+                            return [2 /*return*/, matchItem];
                         case 1:
-                            _a = _b.sent(), info = _a.info, extra = _a.extra, hash = _a.hash;
-                            fileName = util_1.getOutput(output, name, index, hash);
+                            extraFn = extra();
+                            return [4 /*yield*/, extraFn.toBuffer({ resolveWithObject: true })];
+                        case 2:
+                            data = (_a.sent()).data;
+                            fileHash = util_1.getHash(data);
+                            fileName = util_1.getOutput(output, name, index, fileHash);
                             itemBase = fileName + "." + dimension.type;
                             resultPath = path.resolve(outputPath, itemBase);
-                            filter = taskFilter && taskFilter({ info: info, hash: hash });
-                            if (filter) {
-                            }
-                            else {
-                            }
-                            // console.log(info);
-                            //  await extra.toFile(resultPath);
+                            url = path.join(urlPath || outputPath, itemBase);
+                            return [4 /*yield*/, extraFn.toFile(resultPath)];
+                        case 3:
+                            _a.sent();
                             return [2 /*return*/, {
                                     resultPath: resultPath,
+                                    url: url,
                                     info: info,
                                     index: index,
-                                    hash: hash
+                                    hash: hash,
                                 }];
                     }
                 });

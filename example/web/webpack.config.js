@@ -38,7 +38,7 @@ module.exports = {
             options: {
               cachePath: path.resolve(__dirname, "./cache"),
               outputPath: "@assets/slice",
-              template: ({ bgs, imgWidth, imgHeight, isSep, selector }) => {
+              template: ({ bgs, bgWidth, bgHeight, isSep, selector }) => {
                 if (isSep) {
                   return `${selector} .img {
                     background-repeat: no-repeat;
@@ -60,7 +60,7 @@ module.exports = {
                   bgs.forEach((bg) => {
                     const { isRow, top, left, width, height, url } = bg;
                     bp.push(
-                      `${isRow ? left : "center"} ${isRow ? "center" : top}`
+                      `${isRow ? `${left}px` : "center"} ${isRow ? "center" : `${top}px`}`
                     );
                     bs.push(`${width}px ${height}px`);
                     bi.push(`url(${url})`);
@@ -70,12 +70,12 @@ module.exports = {
                     `background-position:${bp.join(",")}`,
                     `background-size: ${bs.join(",")}`,
                     `background-image: ${bi.join(",")}`,
-                    `width: ${imgWidth}px`,
-                    `height: ${imgHeight}px`,
+                    `width: ${bgWidth}px`,
+                    `height: ${bgHeight}px`,
                   ].join(";");
                 }
               },
-              output: "[hash]_slice_[index]",
+              output: "[name]_slice_[index]",
             },
           },
         ],

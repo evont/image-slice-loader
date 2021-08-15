@@ -1,0 +1,16 @@
+[
+  {
+    "image": "./long.png",
+    "options": {
+      "slice": 500,
+      "direction": "column"
+    }
+  },
+  {
+    "image": "./long.png",
+    "options": {
+      "slice": [500, 299, 300],
+      "direction": "column"
+    }
+  }
+]

@@ -9,6 +9,7 @@ import {
   SharpPicOption,
   SharpReturn,
   SharpTask,
+  ShareResult,
 } from "../type";
 import { getSlices, getHash, getOutput } from "./util";
 
@@ -22,7 +23,7 @@ function sharpPic(
   const isRow = direction === "row";
   try {
     const dimension = sizeOf(image);
-    const { width: imgWidth, height: imgHeight, type } = dimension;
+    const { width: imgWidth, height: imgHeight } = dimension;
 
     const imgSize = isRow ? imgWidth : imgHeight;
     const sliceArr = getSlices(imgSize, slice);
@@ -34,7 +35,7 @@ function sharpPic(
       image,
       isRow,
       sliceArr,
-      tasks: sliceArr.map(async (slice) => {
+      tasks: sliceArr.map((slice, ind) => {
         const width = isRow ? slice : imgWidth;
         const height = isRow ? imgHeight : slice;
         const left = offsetX;
@@ -48,15 +49,15 @@ function sharpPic(
           width,
           height,
         };
-        const extra = sharp(image).extract(info);
-        const { data } = await extra.toBuffer({ resolveWithObject: true });
-        const hash = getHash(data);
+        const hash = getHash([ind, left, top, width, height].join("-"));
+        // const extra = sharp(image).extract(info);
+        // const { data } = await extra.toBuffer({ resolveWithObject: true });
+        // const hash = getHash(data);
         return {
           info,
           slice,
-          extra,
+          extra: () => sharp(image).extract(info),
           hash,
-          data
         };
       }),
     };
@@ -71,8 +72,9 @@ export function sharps(images: SharpParam[]) {
     .filter(Boolean);
 }
 type OutputSharpOption = SharpOption & {
-  taskFilter?: (task: Partial<SharpTask>) => Boolean;
-}
+  urlPath?: string;
+  cacheMatch?: (task: Partial<SharpTask>) => ShareResult | null;
+};
 export function outputSharp(
   images: SharpParam,
   options: OutputSharpOption
@@ -86,7 +88,7 @@ export function outputSharp(
   images: SharpParam | SharpParam[],
   options: OutputSharpOption
 ): ShareOutput | ShareOutput[] {
-  const { outputPath, output, taskFilter } = options;
+  const { outputPath, output, urlPath, cacheMatch } = options;
   fs.ensureDirSync(outputPath);
   function deal(sharpsTask: SharpReturn): ShareOutput {
     const { dimension, tasks, image, sliceArr, isRow } = sharpsTask;
@@ -99,27 +101,28 @@ export function outputSharp(
       image,
       sliceArr,
       results: tasks.map(async (task, index) => {
-        const { info, extra, hash } = await task;
-        const fileName = getOutput(output, name, index, hash);
-        const itemBase = `${fileName}.${dimension.type}`;
-        const resultPath = path.resolve(outputPath, itemBase);
-        const filter = taskFilter && taskFilter({ info, hash });
-
-        if (filter) {
-
+        const { info, extra, hash } = task;
+        const matchItem = cacheMatch && cacheMatch({ info, hash });
+        if (matchItem) {
+          return matchItem;
         } else {
-          
+          const extraFn = extra();
+          const { data } = await extraFn.toBuffer({ resolveWithObject: true });
+          const fileHash = getHash(data);
+
+          const fileName = getOutput(output, name, index, fileHash);
+          const itemBase = `${fileName}.${dimension.type}`;
+          const resultPath = path.resolve(outputPath, itemBase);
+          const url = path.join(urlPath || outputPath, itemBase);
+          await extraFn.toFile(resultPath);
+          return {
+            resultPath,
+            url,
+            info,
+            index,
+            hash,
+          };
         }
-
-        // console.log(info);
-        //  await extra.toFile(resultPath);
-
-        return {
-          resultPath,
-          info,
-          index,
-          hash
-        };
       }),
     };
   }

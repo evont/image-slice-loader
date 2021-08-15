@@ -10,7 +10,7 @@ var CACHE_CONFIG = {
     cacheDirectory: findCacheDir({ name: constant_1.LOADER_NAME }) || os_1.tmpdir(),
     get cachePath() {
         return path.join(this.cacheDirectory, constant_1.CACHE_NAME);
-    }
+    },
 };
 function removeOutput(bgs) {
     bgs === null || bgs === void 0 ? void 0 : bgs.forEach(function (bg) {
@@ -50,13 +50,8 @@ function compareCache(newCache, oldCache) {
 exports.compareCache = compareCache;
 var tmpCache;
 function getCache() {
-    if (tmpCache) {
-        return tmpCache;
-    }
-    else {
-        tmpCache = fs.readJsonSync(CACHE_CONFIG.cachePath, { throws: false });
-        return tmpCache;
-    }
+    tmpCache = fs.readJsonSync(CACHE_CONFIG.cachePath, { throws: false });
+    return tmpCache;
 }
 function getImageCache(imgHash, optionHash) {
     var cache = getCache();

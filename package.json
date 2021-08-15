@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "a loader to slice long image & generate css background",
   "main": "dist/index.js",
+  "bin": {
+    "image-slice": "./dist/cli"
+  },
   "scripts": {
     "start": "tsc -w",
     "build": "tsc"
@@ -35,7 +38,8 @@
     "@babel/cli": "^7.14.8",
     "@babel/core": "^7.14.8",
     "@babel/preset-env": "^7.14.8",
-    "@types/node": "^16.6.1"
+    "@types/node": "^16.6.1",
+    "commander": "^8.1.0"
   },
   "dependencies": {
     "find-cache-dir": "^3.3.1",

@@ -22,8 +22,10 @@ export interface LoaderOptions extends SharpOption {
     bgs: BgType[];
     isSep: boolean;
     selector: string;
-    imgWidth: number | string;
-    imgHeight: number | string;
+    bgWidth: number;
+    bgHeight: number;
+    imgWidth: number;
+    imgHeight: number;
   }) => string;
 }
 export interface PluginOptions {
@@ -41,30 +43,31 @@ export interface SharpParam {
   options: SharpPicOption;
 }
 
+export interface ShareResult {
+  resultPath: string;
+  info: ImageInfo;
+  index: number;
+  hash: string;
+  url: string;
+}
 export interface ShareOutput {
   dimension: { width: number; height: number };
   isRow: boolean;
   image: Buffer | string;
   sliceArr: number[];
-  results: Promise<{
-    resultPath: string;
-    info: ImageInfo;
-    index: number;
-    hash: string;
-  }>[];
+  results: Promise<ShareResult>[];
 }
 
 export interface SharpTask {
   info: ImageInfo;
   slice: number;
-  extra: any;
+  extra: () => any;
   hash: string;
-  data: Buffer;
 }
 export interface SharpReturn {
   dimension: { width: number; height: number; type?: string };
   image: string | Buffer;
   isRow: boolean;
   sliceArr: number[];
-  tasks: Promise<SharpTask>[];
+  tasks: SharpTask[];
 }

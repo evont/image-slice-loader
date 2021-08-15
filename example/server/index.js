@@ -47,7 +47,6 @@ const got = require("got");
 const uploadFile = async (imageUrl) => {
   try {
     const response = await got(imageUrl).buffer();
-    console.log(response);
     const tasks = sharps([
       {
         image: response,
@@ -57,10 +56,11 @@ const uploadFile = async (imageUrl) => {
         },
       },
     ]);
-    tasks.forEach(async (result) => {
-      const { tasks } = await result;
+    tasks.forEach((result) => {
+      const { dimension, tasks } = result;
       tasks.map(async (task) => {
-        const { info, data, hash } = await task;
+        const { info, extra, hash } = await task;
+        await extra().toFile(path.resolve(__dirname, "slice", `${hash}.${dimension.type}`))
         console.log("upload file", hash);
         // upload file here
       });
@@ -69,4 +69,4 @@ const uploadFile = async (imageUrl) => {
     console.log(error);
   }
 };
-uploadFile("https://hbimg.huabanimg.com/f14ed9a80c7332fcd62ba2c378571119cad40c54371404-sXvbr0")
+ uploadFile("https://hbimg.huabanimg.com/f14ed9a80c7332fcd62ba2c378571119cad40c54371404-sXvbr0")

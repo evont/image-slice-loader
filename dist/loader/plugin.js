@@ -40,6 +40,7 @@ var path = require("path");
 var fs = require("fs-extra");
 var util_1 = require("../core/util");
 var util_2 = require("./util");
+var cache_1 = require("./util/cache");
 var index_1 = require("../core/index");
 exports.default = (function (_a) {
     var loaderContext = _a.loaderContext, options = _a.options;
@@ -68,13 +69,12 @@ exports.default = (function (_a) {
             outputPath = path.resolve(_context, outputPath);
         }
         fs.ensureDirSync(realOutput);
-        var oldCacheOption = {};
         return {
             postcssPlugin: "image-slice-parser",
             Declaration: function (decl) {
                 var _a;
                 return __awaiter(this, void 0, void 0, function () {
-                    var _b, url_1, direction, isSep, slice, bgSize, filePath, err_1, fileHash, optionHash, cacheOption, currentOption, bgs, bgsResource_1, _imgWidth, _imgHeight, _isRow, outputs, dimension, isRow, results, sliceArr, imgHeight, imgWidth, scale, _i, results_1, result, _c, info, index, hash, resultPath, left, top_1, width, height, e_1, localCss;
+                    var _b, url_1, direction, isSep, slice, bgSize, filePath, err_1, fileHash, optionHash, oldCache, cacheOption, currentOption, bgs, bgsResource_1, _imgWidth, _imgHeight, _isRow, scale, _options, _imgWidth_1, _imgHeight_1, _bgsResource, outputs, dimension, isRow, results, sliceArr, imgHeight, imgWidth, _i, results_1, result, _c, info, index, hash, resultPath, url_2, left, top_1, width, height, e_1, localCss;
                     return __generator(this, function (_d) {
                         switch (_d.label) {
                             case 0:
@@ -102,6 +102,7 @@ exports.default = (function (_a) {
                                     return [2 /*return*/];
                                 fileHash = util_1.getHash(fs.readFileSync(filePath));
                                 optionHash = util_1.getHash([direction, slice.join(",")].join("-"));
+                                oldCache = cache_1.getImageCache(fileHash, optionHash);
                                 cacheOption = {};
                                 currentOption = {};
                                 bgs = [];
@@ -109,6 +110,16 @@ exports.default = (function (_a) {
                                 _imgWidth = 0;
                                 _imgHeight = 0;
                                 _isRow = false;
+                                scale = 1;
+                                if (oldCache) {
+                                    _options = oldCache.options, _imgWidth_1 = oldCache.imgWidth, _imgHeight_1 = oldCache.imgHeight;
+                                    _bgsResource = _options[optionHash].bgsResource;
+                                    bgsResource_1 = _bgsResource;
+                                    cacheOption = _options;
+                                }
+                                else {
+                                    cacheOption[optionHash] = currentOption;
+                                }
                                 _d.label = 5;
                             case 5:
                                 _d.trys.push([5, 10, , 11]);
@@ -121,13 +132,15 @@ exports.default = (function (_a) {
                                 }, {
                                     output: output,
                                     outputPath: realOutput,
-                                    taskFilter: function (item) {
+                                    urlPath: outputPath,
+                                    cacheMatch: function (item) {
                                         var matchItem = bgsResource_1 && bgsResource_1.find(function (bg) { return bg.hash === item.hash; });
+                                        // console.log(matchItem, item.hash,bgsResource)
                                         if (matchItem) {
-                                            var hasFile = fs.pathExistsSync(matchItem.filePath);
-                                            return !hasFile;
+                                            var hasFile = fs.pathExistsSync(matchItem.resultPath);
+                                            return hasFile && matchItem;
                                         }
-                                        return true;
+                                        return null;
                                     }
                                 });
                                 dimension = outputs.dimension, isRow = outputs.isRow, results = outputs.results, sliceArr = outputs.sliceArr;
@@ -143,12 +156,13 @@ exports.default = (function (_a) {
                                 result = results_1[_i];
                                 return [4 /*yield*/, result];
                             case 7:
-                                _c = _d.sent(), info = _c.info, index = _c.index, hash = _c.hash, resultPath = _c.resultPath;
+                                _c = _d.sent(), info = _c.info, index = _c.index, hash = _c.hash, resultPath = _c.resultPath, url_2 = _c.url;
                                 bgsResource_1.push({
                                     info: info,
-                                    url: url_1,
+                                    url: url_2,
                                     hash: hash,
-                                    filePath: resultPath
+                                    index: index,
+                                    resultPath: resultPath
                                 });
                                 left = info.left, top_1 = info.top, width = info.width, height = info.height;
                                 height *= scale;
@@ -161,7 +175,7 @@ exports.default = (function (_a) {
                                     height: height,
                                     width: width,
                                     index: index,
-                                    url: url_1,
+                                    url: url_2,
                                     isRow: isRow,
                                 });
                                 _d.label = 8;
@@ -199,6 +213,8 @@ exports.default = (function (_a) {
                                     bgs: bgs,
                                     isSep: isSep,
                                     selector: decl.parent.selector,
+                                    bgWidth: _imgWidth * scale,
+                                    bgHeight: _imgHeight * scale,
                                     imgWidth: _imgWidth,
                                     imgHeight: _imgHeight,
                                 });
