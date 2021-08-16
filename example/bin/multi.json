@@ -2,15 +2,15 @@
   {
     "image": "./long.png",
     "options": {
-      "slice": 500,
+      "slice": "500",
       "direction": "column"
     }
   },
   {
-    "image": "./long.png",
+    "image": "./long2.png",
     "options": {
-      "slice": [500, 299, 300],
-      "direction": "column"
+      "slice": ["123", "456", 300],
+      "direction": "row"
     }
   }
 ]

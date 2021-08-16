@@ -147,9 +147,8 @@ function outputSharp(images, options) {
             }); }),
         };
     }
-    var isArray = Object.prototype.toString.call(images) === "[object Array]";
     try {
-        if (isArray) {
+        if (Array.isArray(images)) {
             var sharpsTasks = sharps(images);
             return sharpsTasks.map(function (sharpsTask) { return deal(sharpsTask); });
         }

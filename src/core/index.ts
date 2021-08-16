@@ -126,9 +126,8 @@ export function outputSharp(
       }),
     };
   }
-  const isArray = Object.prototype.toString.call(images) === "[object Array]";
   try {
-    if (isArray) {
+    if (Array.isArray(images)) {
       const sharpsTasks = sharps(images as SharpParam[]);
       return sharpsTasks.map((sharpsTask) => deal(sharpsTask));
     } else {
