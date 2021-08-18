@@ -1,4 +1,11 @@
 "use strict";
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setCachePath = exports.invalidCache = exports.setCache = exports.getImageCache = exports.compareCache = void 0;
 var findCacheDir = require("find-cache-dir");
@@ -15,7 +22,7 @@ var CACHE_CONFIG = {
 function removeOutput(bgs) {
     bgs === null || bgs === void 0 ? void 0 : bgs.forEach(function (bg) {
         try {
-            fs.removeSync(bg.filePath);
+            fs.removeSync(typeof bg === 'string' ? bg : bg.resultPath);
         }
         catch (err) {
             void err;
@@ -25,19 +32,28 @@ function removeOutput(bgs) {
 function compareCache(newCache, oldCache) {
     if (!oldCache)
         return;
-    for (var k in oldCache) {
+    var _loop_1 = function (k) {
         if (k in newCache) {
             var oldOpt = oldCache[k].options;
             var newOpt = newCache[k].options;
+            var usedBgs = [];
+            var removeBgs = [];
+            for (var j in newOpt) {
+                usedBgs.push.apply(usedBgs, newOpt[j].bgsResource.map(function (item) { return item.resultPath; }));
+            }
             for (var j in oldOpt) {
                 if (j in newOpt) {
                     void 0;
                 }
                 else {
-                    removeOutput(oldOpt[j].bgsResource);
+                    removeBgs.push.apply(removeBgs, oldOpt[j].bgsResource.map(function (item) { return item.resultPath; }));
                     delete oldOpt[j];
                 }
             }
+            var uSet_1 = new Set(usedBgs);
+            var rSet = new Set(removeBgs);
+            var diff = new Set(__spreadArrays(Array.from(rSet)).filter(function (x) { return !uSet_1.has(x); }));
+            removeOutput(Array.from(diff));
         }
         else {
             for (var j in oldCache[k].options) {
@@ -45,6 +61,9 @@ function compareCache(newCache, oldCache) {
             }
             delete oldCache[k];
         }
+    };
+    for (var k in oldCache) {
+        _loop_1(k);
     }
 }
 exports.compareCache = compareCache;

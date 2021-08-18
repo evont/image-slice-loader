@@ -69,33 +69,35 @@ exports.default = (function (_a) {
             outputPath = path.resolve(_context, outputPath);
         }
         fs.ensureDirSync(realOutput);
+        var oldCacheOption = {};
         return {
             postcssPlugin: "image-slice-parser",
             Declaration: function (decl) {
-                var _a;
+                var _a, _b;
                 return __awaiter(this, void 0, void 0, function () {
-                    var _b, url_1, direction, isSep, slice, bgSize, filePath, err_1, fileHash, optionHash, oldCache, cacheOption, currentOption, bgs, bgsResource_1, _imgWidth, _imgHeight, _isRow, scale, _options, _imgWidth_1, _imgHeight_1, _bgsResource, outputs, dimension, isRow, results, sliceArr, imgHeight, imgWidth, _i, results_1, result, _c, info, index, hash, resultPath, url_2, left, top_1, width, height, e_1, localCss;
-                    return __generator(this, function (_d) {
-                        switch (_d.label) {
+                    var _c, url_1, direction, isSep, slice, bgSize, filePath, err_1, fileHash, optionHash, oldCache, cacheOption, currentOption, bgs, bgsResource_1, _imgWidth, _imgHeight, _isRow, scale, cacheDimension, _options, _imgWidth_1, _imgHeight_1, _d, _bgsResource, _dimension, outputs, dimension, isRow, results, sliceArr, imgHeight, imgWidth, _loop_1, _i, results_1, result, e_1, localCss;
+                    var _e;
+                    return __generator(this, function (_f) {
+                        switch (_f.label) {
                             case 0:
                                 if (!(decl.prop === property)) return [3 /*break*/, 12];
-                                _b = util_2.parseProperty(decl.value), url_1 = _b.url, direction = _b.direction, isSep = _b.isSep, slice = _b.slice, bgSize = _b.bgSize;
+                                _c = util_2.parseProperty(decl.value), url_1 = _c.url, direction = _c.direction, isSep = _c.isSep, slice = _c.slice, bgSize = _c.bgSize;
                                 if (!url_1)
                                     return [2 /*return*/];
                                 filePath = void 0;
-                                _d.label = 1;
+                                _f.label = 1;
                             case 1:
-                                _d.trys.push([1, 3, , 4]);
+                                _f.trys.push([1, 3, , 4]);
                                 return [4 /*yield*/, new Promise(function (resolve, reject) {
                                         return loaderContext.resolve(loaderContext.context, url_1, function (err, result) {
                                             return err ? reject(err) : resolve(result);
                                         });
                                     })];
                             case 2:
-                                filePath = _d.sent();
+                                filePath = _f.sent();
                                 return [3 /*break*/, 4];
                             case 3:
-                                err_1 = _d.sent();
+                                err_1 = _f.sent();
                                 throw new Error(url_1 + " can't be loaded, Please use a correct file path");
                             case 4:
                                 if (!filePath)
@@ -111,18 +113,29 @@ exports.default = (function (_a) {
                                 _imgHeight = 0;
                                 _isRow = false;
                                 scale = 1;
+                                cacheDimension = void 0;
                                 if (oldCache) {
                                     _options = oldCache.options, _imgWidth_1 = oldCache.imgWidth, _imgHeight_1 = oldCache.imgHeight;
-                                    _bgsResource = _options[optionHash].bgsResource;
+                                    cache[fileHash] = Object.assign(cache[fileHash] || {}, {
+                                        options: Object.assign(((_a = cache[fileHash]) === null || _a === void 0 ? void 0 : _a.options) || {}, (_e = {},
+                                            _e[optionHash] = _options[optionHash],
+                                            _e)),
+                                        imgWidth: _imgWidth_1,
+                                        imgHeight: _imgHeight_1,
+                                    });
+                                    cacheOption = cache[fileHash].options;
+                                    _d = _options[optionHash], _bgsResource = _d.bgsResource, _dimension = _d.dimension;
                                     bgsResource_1 = _bgsResource;
-                                    cacheOption = _options;
+                                    if (_dimension)
+                                        cacheDimension = _dimension;
+                                    Object.assign(currentOption, cacheOption[optionHash]);
                                 }
                                 else {
                                     cacheOption[optionHash] = currentOption;
                                 }
-                                _d.label = 5;
+                                _f.label = 5;
                             case 5:
-                                _d.trys.push([5, 10, , 11]);
+                                _f.trys.push([5, 10, , 11]);
                                 outputs = index_1.outputSharp({
                                     image: filePath,
                                     options: {
@@ -134,51 +147,64 @@ exports.default = (function (_a) {
                                     outputPath: realOutput,
                                     urlPath: outputPath,
                                     cacheMatch: function (item) {
-                                        var matchItem = bgsResource_1 && bgsResource_1.find(function (bg) { return bg.hash === item.hash; });
-                                        // console.log(matchItem, item.hash,bgsResource)
+                                        var matchItem = bgsResource_1 &&
+                                            bgsResource_1.find(function (bg) { return bg.hash === item.hash; });
                                         if (matchItem) {
                                             var hasFile = fs.pathExistsSync(matchItem.resultPath);
                                             return hasFile && matchItem;
                                         }
                                         return null;
-                                    }
-                                });
+                                    },
+                                }, cacheDimension);
                                 dimension = outputs.dimension, isRow = outputs.isRow, results = outputs.results, sliceArr = outputs.sliceArr;
                                 imgHeight = dimension.height, imgWidth = dimension.width;
                                 _imgWidth = imgWidth;
                                 _imgHeight = imgHeight;
                                 _isRow = isRow;
                                 scale = bgSize ? bgSize / (isRow ? imgHeight : imgWidth) : 1;
+                                _loop_1 = function (result) {
+                                    var _a, info, index, hash, resultPath, url_2, left, top_1, width, height;
+                                    return __generator(this, function (_b) {
+                                        switch (_b.label) {
+                                            case 0: return [4 /*yield*/, result];
+                                            case 1:
+                                                _a = _b.sent(), info = _a.info, index = _a.index, hash = _a.hash, resultPath = _a.resultPath, url_2 = _a.url;
+                                                if (bgsResource_1.findIndex(function (br) { return br.hash === hash; }) === -1) {
+                                                    bgsResource_1.push({
+                                                        info: info,
+                                                        url: url_2,
+                                                        hash: hash,
+                                                        index: index,
+                                                        resultPath: resultPath,
+                                                    });
+                                                }
+                                                left = info.left, top_1 = info.top, width = info.width, height = info.height;
+                                                height *= scale;
+                                                width *= scale;
+                                                left *= scale;
+                                                top_1 *= scale;
+                                                bgs.push({
+                                                    top: top_1,
+                                                    left: left,
+                                                    height: height,
+                                                    width: width,
+                                                    index: index,
+                                                    url: url_2,
+                                                    isRow: isRow,
+                                                });
+                                                return [2 /*return*/];
+                                        }
+                                    });
+                                };
                                 _i = 0, results_1 = results;
-                                _d.label = 6;
+                                _f.label = 6;
                             case 6:
                                 if (!(_i < results_1.length)) return [3 /*break*/, 9];
                                 result = results_1[_i];
-                                return [4 /*yield*/, result];
+                                return [5 /*yield**/, _loop_1(result)];
                             case 7:
-                                _c = _d.sent(), info = _c.info, index = _c.index, hash = _c.hash, resultPath = _c.resultPath, url_2 = _c.url;
-                                bgsResource_1.push({
-                                    info: info,
-                                    url: url_2,
-                                    hash: hash,
-                                    index: index,
-                                    resultPath: resultPath
-                                });
-                                left = info.left, top_1 = info.top, width = info.width, height = info.height;
-                                height *= scale;
-                                width *= scale;
-                                left *= scale;
-                                top_1 *= scale;
-                                bgs.push({
-                                    top: top_1,
-                                    left: left,
-                                    height: height,
-                                    width: width,
-                                    index: index,
-                                    url: url_2,
-                                    isRow: isRow,
-                                });
-                                _d.label = 8;
+                                _f.sent();
+                                _f.label = 8;
                             case 8:
                                 _i++;
                                 return [3 /*break*/, 6];
@@ -186,10 +212,11 @@ exports.default = (function (_a) {
                                 Object.assign(currentOption, {
                                     bgsResource: bgsResource_1,
                                     sliceArr: sliceArr,
+                                    dimension: dimension,
                                 });
                                 return [3 /*break*/, 11];
                             case 10:
-                                e_1 = _d.sent();
+                                e_1 = _f.sent();
                                 bgs = [
                                     {
                                         top: 0,
@@ -205,7 +232,7 @@ exports.default = (function (_a) {
                                 return [3 /*break*/, 11];
                             case 11:
                                 cache[fileHash] = Object.assign(cache[fileHash] || {}, {
-                                    options: Object.assign(((_a = cache[fileHash]) === null || _a === void 0 ? void 0 : _a.options) || {}, cacheOption),
+                                    options: Object.assign(((_b = cache[fileHash]) === null || _b === void 0 ? void 0 : _b.options) || {}, cacheOption),
                                     imgWidth: _imgWidth,
                                     imgHeight: _imgHeight,
                                 });
@@ -225,7 +252,7 @@ exports.default = (function (_a) {
                                     decl.after(localCss);
                                 }
                                 decl.remove();
-                                _d.label = 12;
+                                _f.label = 12;
                             case 12: return [2 /*return*/];
                         }
                     });

@@ -12,22 +12,23 @@ import {
   ShareResult,
 } from "../type";
 import { getSlices, getHash, getOutput } from "./util";
+import { ISizeCalculationResult } from "image-size/dist/types/interface";
 
 function sharpPic(
   image: Buffer | string,
-  options: SharpPicOption
+  options: SharpPicOption,
+  dimension?: ISizeCalculationResult
 ): SharpReturn {
   let { direction, slice } = options;
   if (typeof slice === "number") slice = [slice];
 
   const isRow = direction === "row";
   try {
-    const dimension = sizeOf(image);
+    dimension = dimension || sizeOf(image);
     const { width: imgWidth, height: imgHeight } = dimension;
 
     const imgSize = isRow ? imgWidth : imgHeight;
     const sliceArr = getSlices(imgSize, slice);
-    // console.log(sliceArr);
     let offsetX = 0;
     let offsetY = 0;
     return {
@@ -50,9 +51,6 @@ function sharpPic(
           height,
         };
         const hash = getHash([ind, left, top, width, height].join("-"));
-        // const extra = sharp(image).extract(info);
-        // const { data } = await extra.toBuffer({ resolveWithObject: true });
-        // const hash = getHash(data);
         return {
           info,
           slice,
@@ -77,16 +75,19 @@ type OutputSharpOption = SharpOption & {
 };
 export function outputSharp(
   images: SharpParam,
-  options: OutputSharpOption
+  options: OutputSharpOption,
+  dimension?: ISizeCalculationResult
 ): ShareOutput;
 export function outputSharp(
   images: SharpParam[],
-  options: OutputSharpOption
+  options: OutputSharpOption,
+  dimension?: ISizeCalculationResult
 ): ShareOutput[];
 
 export function outputSharp(
   images: SharpParam | SharpParam[],
-  options: OutputSharpOption
+  options: OutputSharpOption,
+  dimension?: ISizeCalculationResult
 ): ShareOutput | ShareOutput[] {
   const { outputPath, output, urlPath, cacheMatch } = options;
   fs.ensureDirSync(outputPath);
@@ -132,7 +133,7 @@ export function outputSharp(
       return sharpsTasks.map((sharpsTask) => deal(sharpsTask));
     } else {
       const { image, options } = images as SharpParam;
-      return deal(sharpPic(image, options));
+      return deal(sharpPic(image, options, dimension));
     }
   } catch (e) {
     throw e;

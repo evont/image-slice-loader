@@ -39,6 +39,8 @@ export default ({ loaderContext, options }: PluginOptions) => {
     }
 
     fs.ensureDirSync(realOutput);
+    const oldCacheOption = {};
+
     return {
       postcssPlugin: "image-slice-parser",
       async Declaration(decl) {
@@ -74,19 +76,30 @@ export default ({ loaderContext, options }: PluginOptions) => {
           let _imgHeight = 0;
           let _isRow = false;
           let scale = 1;
+          let cacheDimension;
           if (oldCache) {
             const {
               options: _options,
               imgWidth: _imgWidth,
               imgHeight: _imgHeight,
             } = oldCache;
-            const { bgsResource: _bgsResource } = _options[optionHash];
+            cache[fileHash] = Object.assign(cache[fileHash] || {}, {
+              options: Object.assign(cache[fileHash]?.options || {}, {
+                [optionHash]: _options[optionHash],
+              }),
+              imgWidth: _imgWidth,
+              imgHeight: _imgHeight,
+            });
+            cacheOption = cache[fileHash].options;
+            const { bgsResource: _bgsResource, dimension: _dimension } =
+              _options[optionHash];
             bgsResource = _bgsResource;
-            
-            cacheOption = _options;
+            if (_dimension) cacheDimension = _dimension;
+            Object.assign(currentOption, cacheOption[optionHash]);
           } else {
             cacheOption[optionHash] = currentOption;
           }
+          
 
           // only if all images is extracted should we continue to process css file
           // error will fallback to use original image
@@ -104,15 +117,17 @@ export default ({ loaderContext, options }: PluginOptions) => {
                 outputPath: realOutput,
                 urlPath: outputPath,
                 cacheMatch: (item) => {
-                  const matchItem = bgsResource && bgsResource.find(bg => bg.hash === item.hash);
-                  // console.log(matchItem, item.hash,bgsResource)
+                  const matchItem =
+                    bgsResource &&
+                    bgsResource.find((bg) => bg.hash === item.hash);
                   if (matchItem) {
-                    const hasFile =  fs.pathExistsSync(matchItem.resultPath);
+                    const hasFile = fs.pathExistsSync(matchItem.resultPath);
                     return hasFile && matchItem;
                   }
                   return null;
-                }
-              }
+                },
+              },
+              cacheDimension
             );
             const { dimension, isRow, results, sliceArr } = outputs;
             const { height: imgHeight, width: imgWidth } = dimension;
@@ -122,13 +137,15 @@ export default ({ loaderContext, options }: PluginOptions) => {
             scale = bgSize ? bgSize / (isRow ? imgHeight : imgWidth) : 1;
             for (let result of results) {
               const { info, index, hash, resultPath, url } = await result;
-              bgsResource.push({
-                info,
-                url,
-                hash,
-                index,
-                resultPath
-              })
+              if (bgsResource.findIndex((br) => br.hash === hash) === -1) {
+                bgsResource.push({
+                  info,
+                  url,
+                  hash,
+                  index,
+                  resultPath,
+                });
+              }
 
               let { left, top, width, height } = info;
 
@@ -150,6 +167,7 @@ export default ({ loaderContext, options }: PluginOptions) => {
             Object.assign(currentOption, {
               bgsResource,
               sliceArr,
+              dimension,
             });
           } catch (e) {
             bgs = [

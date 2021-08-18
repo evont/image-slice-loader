@@ -13,7 +13,7 @@ const CACHE_CONFIG = {
 function removeOutput(bgs) {
   bgs?.forEach((bg) => {
     try {
-      fs.removeSync(bg.filePath);
+      fs.removeSync(typeof bg === 'string' ? bg : bg.resultPath);
     } catch (err) {
       void err;
     }
@@ -26,14 +26,23 @@ export function compareCache(newCache, oldCache) {
     if (k in newCache) {
       const oldOpt = oldCache[k].options;
       const newOpt = newCache[k].options;
+      const usedBgs: string[] = [];
+      const removeBgs: string[] = [];
+      for (const j in newOpt) {
+        usedBgs.push(...newOpt[j].bgsResource.map((item) => item.resultPath));
+      }
       for (const j in oldOpt) {
         if (j in newOpt) {
           void 0;
         } else {
-          removeOutput(oldOpt[j].bgsResource);
+          removeBgs.push(...oldOpt[j].bgsResource.map((item) => item.resultPath));
           delete oldOpt[j];
         }
       }
+      const uSet = new Set(usedBgs);
+      const rSet = new Set(removeBgs);
+      const diff = new Set([...Array.from(rSet)].filter((x) => !uSet.has(x)));
+       removeOutput(Array.from(diff));
     } else {
       for (const j in oldCache[k].options) {
         removeOutput(oldCache[k].options[j].bgsResource);

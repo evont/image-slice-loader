@@ -42,17 +42,16 @@ var sharp = require("sharp");
 var path = require("path");
 var fs = require("fs-extra");
 var util_1 = require("./util");
-function sharpPic(image, options) {
+function sharpPic(image, options, dimension) {
     var direction = options.direction, slice = options.slice;
     if (typeof slice === "number")
         slice = [slice];
     var isRow = direction === "row";
     try {
-        var dimension = image_size_1.default(image);
+        dimension = dimension || image_size_1.default(image);
         var imgWidth_1 = dimension.width, imgHeight_1 = dimension.height;
         var imgSize = isRow ? imgWidth_1 : imgHeight_1;
         var sliceArr = util_1.getSlices(imgSize, slice);
-        // console.log(sliceArr);
         var offsetX_1 = 0;
         var offsetY_1 = 0;
         return {
@@ -74,9 +73,6 @@ function sharpPic(image, options) {
                     height: height,
                 };
                 var hash = util_1.getHash([ind, left, top, width, height].join("-"));
-                // const extra = sharp(image).extract(info);
-                // const { data } = await extra.toBuffer({ resolveWithObject: true });
-                // const hash = getHash(data);
                 return {
                     info: info,
                     slice: slice,
@@ -99,7 +95,7 @@ function sharps(images) {
         .filter(Boolean);
 }
 exports.sharps = sharps;
-function outputSharp(images, options) {
+function outputSharp(images, options, dimension) {
     var outputPath = options.outputPath, output = options.output, urlPath = options.urlPath, cacheMatch = options.cacheMatch;
     fs.ensureDirSync(outputPath);
     function deal(sharpsTask) {
@@ -154,7 +150,7 @@ function outputSharp(images, options) {
         }
         else {
             var _a = images, image = _a.image, options_1 = _a.options;
-            return deal(sharpPic(image, options_1));
+            return deal(sharpPic(image, options_1, dimension));
         }
     }
     catch (e) {
