@@ -1,6 +1,6 @@
 {
   "name": "image-slice-loader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "a loader to slice long image & generate css background",
   "main": "dist/index.js",
   "bin": {
