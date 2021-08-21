@@ -62,7 +62,7 @@ function parseProperty(propValue) {
             .map(function (num) { return useNumOnly(num, 500); });
     }
     var direction = "column";
-    var isSep = false;
+    var isSeparate = false;
     var tmp = valArr[3];
     if (tmp === "column" || tmp === "row") {
         direction = tmp;
@@ -73,13 +73,13 @@ function parseProperty(propValue) {
             tmp = "";
         }
     }
-    isSep = (tmp && tmp === "true") || false;
+    isSeparate = (tmp && tmp === "true") || false;
     return {
         url: url,
         bgSize: bgSize,
         slice: slice,
         direction: direction,
-        isSep: isSep
+        isSeparate: isSeparate
     };
 }
 exports.parseProperty = parseProperty;

@@ -7,7 +7,6 @@ export interface ImageInfo {
 export interface BgType extends ImageInfo {
   index: number;
   url: string;
-  info?: ImageInfo;
   isRow: boolean;
 }
 export interface SharpOption {
@@ -20,7 +19,7 @@ export interface LoaderOptions extends SharpOption {
   cachePath?: string;
   template?: (data: {
     bgs: BgType[];
-    isSep: boolean;
+    isSeparate: boolean;
     selector: string;
     bgWidth: number;
     bgHeight: number;

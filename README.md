@@ -1,6 +1,6 @@
 # image-slice-loader
 
-A Webpack loader to cut image slices from long image to generate css background.
+Tool that cut image slices from long image.
 
 ---
 
@@ -12,7 +12,11 @@ To begin, you'll need to install `image-slice-loader`
 npm install --save-dev image-slice-loader
 ```
 
-you also need to combine `css-loader`, and make sure to add it `before` `css-loader` in your webpack config:
+### **As a Loader**
+
+It can be used in webpack as loader, help you to extra image from your css, slice it and generate css background.  here is some [Example](https://github.com/evont/image-slice-loader/tree/main/example/web)
+
+You need to combine `css-loader`, and make sure to add it **BEFORE** `css-loader` in your webpack config:
 
 ```js
 module.exports = {
@@ -28,16 +32,10 @@ module.exports = {
             options: {
               outputPath: "@assets/slice",
               template: "./src/template.hbs",
-              sepTemplate: "./src/template-sep.hbs",
-              handlebarsHelpers: {
-                getInd(ind) {
-                  return ind + 1;
-                },
-              },
               output: "[hash]_[name]_slice_[index]",
             },
           },
-        ]
+        ],
       },
     ],
   },
@@ -46,50 +44,51 @@ module.exports = {
 
 after setup loaders of css, you can use this feature in your css with the follow ways:
 
-  - You should always pass the background url as the first param. 
-  
-    The second param decides the background size in your css, output will still use the origin size.
+- You should always pass the background url as the first param.
 
-    The third param is the slice size, background will be slice with this size (the final slice may be smaller then this)
+  The second param decides the background size in your css, output will still use the origin size.
 
-    ```css
-    #app {
-      long-bg: url(@assets/long-1.png) 375 300;
-    }
-    ```
+  The third param is the slice size, background will be slice with this size (the final slice may be smaller then this)
 
-  - FEEL FREE If you want your background image to be sliced into different sizes, the third param can be a set of number, each number stands for the slice size.
+  ```css
+  #app {
+    long-bg: url(@assets/long-1.png) 375 300;
+  }
+  ```
 
-    By the way, size is not in vertical only, you can also pass a `row` or `column` as the forth param, `row` means image will be sliced in horizontal direction, and `column` by default, means vertical direction
+- FEEL FREE If you want your background image to be sliced into different sizes, the third param can be a set of number, each number stands for the slice size.
 
-    ```css
-    #app2 {
-        long-bg:  url(@assets/deep/long-2.jpeg) 375 120, 325, 333,880, 550, 1000,900,650,920, 988 row;
-    }
-    ```
+  By the way, size is not in vertical only, you can also pass a `row` or `column` as the forth param, `row` means image will be sliced in horizontal direction, and `column` by default, means vertical direction
 
-  - The final param determine whether the output css use seperate template or not, you can pass it with or without direction, if is seperate, the transformed css will be inserted after the parent of current css, if NOT, and default, the transformed css will be replace the custom css.
+  ```css
+  #app2 {
+    long-bg: url(@assets/deep/long-2.jpeg) 375 120, 325, 333, 880, 550, 1000, 900,
+      650, 920, 988 row;
+  }
+  ```
 
-    ```css
-    #app3 {
-      long-bg:  url(@assets/long-3.png) 375 540, 425, 333,880, 550, 1000,900,650,920, 988 true;
-    }
-    ```
+- The final param determine whether the output css use seperate template or not, you can pass it with or without direction, if is seperate, the transformed css will be inserted after the parent of current css, if NOT, and default, the transformed css will be replace the custom css.
 
+  ```css
+  #app3 {
+    long-bg: url(@assets/long-3.png) 375 540, 425, 333, 880, 550, 1000, 900, 650,
+      920, 988 true;
+  }
+  ```
 
 ## Options
 
-|                     Name                      |         Type         |   Default   | Description                                                |
-| :-------------------------------------------: | :------------------: | :---------: | :--------------------------------------------------------- |
-|        [**`property`**](#property)           |      `{String}`      | `long-bg`  | Custom CSS property name   |
-|        [**`output`**](#output)      |      `{String\|Function(name, index, hash) -> {String}}`      |    `[hash]_[index]`     |  Output name formate for slice image                            |
-|            [**`outputPath`**](#outputPath)             | `{String}` |   `./slice`    | Output path of slice images, relative to [webpack root context](https://v4.webpack.docschina.org/api/loaders/#this-rootcontext)            |
-| [**`template`**](#template) | `{String}` | `''` | Template of virtual property transformed local CSS|
-|              [**`sepTemplate`**](#sepTemplate)              |      `{String}`      |   `''`    | Template of virtual property transformed local CSS in seperate way.                        |
-|          [**`handlebarsHelpers`**](#handlebarsHelpers)          |     `{Object}`      |   `true`    | helper for handlebars template        |
+|              Name               |                        Type                         |     Default      | Description                                                                                                                     |
+| :-----------------------------: | :-------------------------------------------------: | :--------------: | :------------------------------------------------------------------------------------------------------------------------------ |
+|   [**`property`**](#property)   |                     `{String}`                      |    `long-bg`     | Custom CSS property name                                                                                                        |
+|     [**`output`**](#output)     | `{String\|Function(name, index, hash) -> {String}}` | `[hash]_[index]` | Output name formate for slice image                                                                                             |
+| [**`outputPath`**](#outputPath) |                     `{String}`                      |    `./slice`     | Output path of slice images, relative to [webpack root context](https://v4.webpack.docschina.org/api/loaders/#this-rootcontext) |
+|   [**`template`**](#template)   |           `{Function(data) -> {String}}`            |       `''`       | Template function of virtual property transformed local CSS                                                                     |
 
 ### `property`
-Custom CSS property name, for example, if you use `long-pic`, your CSS will be like: 
+
+Custom CSS property name, for example, if you use `long-pic`, your CSS will be like:
+
 ```css
 #app {
   long-pic: url(@assets/long-1.png) 375;
@@ -97,25 +96,102 @@ Custom CSS property name, for example, if you use `long-pic`, your CSS will be l
 ```
 
 ### `output`
+
 Output filename format like output.filename of Webpack.
 
 you can pass a string with following tokens will be replaced:
-  - `[name]` the name of source background pic
-  - `[hash]` the hash of source background pic 
-  - `[index]` the index of current slice, start from 0
 
-or, you can pass a function in  `(name, index, hash) => string` structure with the same params like above
+- `[name]` the name of source background pic
+- `[hash]` the hash of source background pic
+- `[index]` the index of current slice, start from 0
+
+or, you can pass a function in `(name, index, hash) => string` structure with the same params like above
 
 ### `outputPath`
-Output path of slice images, relative to [webpack root context](https://v4.webpack.docschina.org/api/loaders/#this-rootcontext) 
+
+Output path of slice images, relative to [webpack root context](https://v4.webpack.docschina.org/api/loaders/#this-rootcontext)
 
 you can use `alias` such as `@assets/slice` as your output path
 
 ### `template`
-`handlebars` template path of virtual property transformed local CSS. other template engine will support in the future.
 
-### `sepTemplate`
-same like [**`template`**](#template), but it will be use when you want your css use a seperate selector or more customize
+template function to custom vitural property transformed local CSS
 
-### handlebarsHelpers
-Container for helpers to register to handlebars for your template
+```typescript
+interface BgType {
+  top: number;
+  left: number;
+  height: number;
+  width: number;
+  index: number;
+  url: string;
+  isRow: boolean;
+}
+
+// template function accept a data as follow structure
+type template = (data: {
+  bgs: BgType[];
+  isSeparate: boolean;
+  selector: string;
+  bgWidth: number;
+  bgHeight: number;
+  imgWidth: number;
+  imgHeight: number;
+}) => string;
+```
+
+### **As a normal Node module**
+
+You can use it in your node.js service, upload some long image and slice it to store in your own way, here is some [Example](https://github.com/evont/image-slice-loader/tree/main/example/server)
+
+
+```javascript
+const { outputSharp, sharps } = require("image-slice-loader");
+const got = require("got");
+const uploadFile = async (imageUrl) => {
+  try {
+    const response = await got(imageUrl).buffer();
+    const tasks = sharps([
+      {
+        image: response,
+        options: {
+          slice: 1200,
+          direction: "column",
+        },
+      },
+    ]);
+    tasks.forEach((result) => {
+      const { dimension, tasks } = result;
+      tasks.map(async (task) => {
+        const { info, extra, hash } = task;
+        await extra().toFile(
+          path.resolve(__dirname, "slice", `${hash}.${dimension.type}`)
+        );
+        // upload file or store it
+      });
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+uploadFile("https://yourimgagelink");
+
+function dealImages() {
+  outputSharp([
+    {
+      image: path.resolve(__dirname, "./long.png"),
+      options: {
+        slice: 200,
+        direction: "column",
+      },
+    },
+  ]);
+}
+dealImages();
+```
+
+### **As a cli**
+
+You can run `image-slice -i ./yourimage -s 200, 200 -d column -o ./yououput` or `image-slice -j someimagesInfo.json`
+
+here is some [Example](https://github.com/evont/image-slice-loader/tree/main/example/bin)

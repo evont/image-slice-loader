@@ -68,7 +68,7 @@ export function parseProperty(propValue: string) {
       .map((num) => useNumOnly(num, 500));
   }
   let direction: "column" | "row" = "column";
-  let isSep = false;
+  let isSeparate = false;
   let tmp = valArr[3];
   if (tmp === "column" || tmp === "row") {
     direction = tmp;
@@ -78,12 +78,12 @@ export function parseProperty(propValue: string) {
       tmp = "";
     }
   }
-  isSep = (tmp && tmp === "true") || false;
+  isSeparate = (tmp && tmp === "true") || false;
   return {
     url,
     bgSize,
     slice,
     direction,
-    isSep
+    isSeparate
   };
 }

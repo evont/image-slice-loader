@@ -11,9 +11,7 @@
     "build": "tsc"
   },
   "files": [
-    "dist",
-    "template.hbs",
-    "template-sep.hbs"
+    "dist"
   ],
   "repository": {
     "type": "git",
@@ -38,8 +36,7 @@
     "@babel/cli": "^7.14.8",
     "@babel/core": "^7.14.8",
     "@babel/preset-env": "^7.14.8",
-    "@types/node": "^16.6.1",
-    "commander": "^8.1.0"
+    "@types/node": "^16.6.1"
   },
   "dependencies": {
     "find-cache-dir": "^3.3.1",
@@ -48,6 +45,7 @@
     "loader-utils": "^2.0.0",
     "postcss": "^8.3.6",
     "schema-utils": "^3.1.1",
-    "sharp": "^0.28.3"
+    "sharp": "^0.28.3",
+    "commander": "^8.1.0"
   }
 }

@@ -36,7 +36,6 @@ module.exports = {
           {
             loader: "image-slice-loader",
             options: {
-              cachePath: path.resolve(__dirname, "./cache"),
               outputPath: "@assets/slice",
               template: ({ bgs, bgWidth, bgHeight, isSep, selector }) => {
                 if (isSep) {

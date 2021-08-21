@@ -37,7 +37,7 @@ function dealImages() {
       outputPath: path.resolve(__dirname, "slice"),
       output: "[hash]_[name]",
     }
-  )
+  );
 }
 
 dealImages();
@@ -59,8 +59,10 @@ const uploadFile = async (imageUrl) => {
     tasks.forEach((result) => {
       const { dimension, tasks } = result;
       tasks.map(async (task) => {
-        const { info, extra, hash } = await task;
-        await extra().toFile(path.resolve(__dirname, "slice", `${hash}.${dimension.type}`))
+        const { info, extra, hash } = task;
+        await extra().toFile(
+          path.resolve(__dirname, "slice", `${hash}.${dimension.type}`)
+        );
         console.log("upload file", hash);
         // upload file here
       });
@@ -69,4 +71,6 @@ const uploadFile = async (imageUrl) => {
     console.log(error);
   }
 };
- uploadFile("https://hbimg.huabanimg.com/f14ed9a80c7332fcd62ba2c378571119cad40c54371404-sXvbr0")
+uploadFile(
+  "https://hbimg.huabanimg.com/f14ed9a80c7332fcd62ba2c378571119cad40c54371404-sXvbr0"
+);

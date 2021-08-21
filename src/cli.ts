@@ -1,9 +1,5 @@
 #!/usr/bin/env node
 
-//TODO: can be used in cli
-// --json for multiple image
-// --img
-
 import { Command } from "commander";
 import { sharps } from "./index";
 import * as path from "path";

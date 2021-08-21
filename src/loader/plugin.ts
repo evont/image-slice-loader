@@ -39,13 +39,12 @@ export default ({ loaderContext, options }: PluginOptions) => {
     }
 
     fs.ensureDirSync(realOutput);
-    const oldCacheOption = {};
 
     return {
       postcssPlugin: "image-slice-parser",
       async Declaration(decl) {
         if (decl.prop === property) {
-          const { url, direction, isSep, slice, bgSize } = parseProperty(
+          const { url, direction, isSeparate, slice, bgSize } = parseProperty(
             decl.value
           );
 
@@ -191,14 +190,14 @@ export default ({ loaderContext, options }: PluginOptions) => {
 
           const localCss = template({
             bgs,
-            isSep,
+            isSeparate,
             selector: (decl.parent as Rule).selector,
             bgWidth: _imgWidth * scale,
             bgHeight: _imgHeight * scale,
             imgWidth: _imgWidth,
             imgHeight: _imgHeight,
           });
-          if (isSep) {
+          if (isSeparate) {
             decl.parent.after(localCss);
           } else {
             decl.after(localCss);

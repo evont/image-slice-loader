@@ -69,19 +69,18 @@ exports.default = (function (_a) {
             outputPath = path.resolve(_context, outputPath);
         }
         fs.ensureDirSync(realOutput);
-        var oldCacheOption = {};
         return {
             postcssPlugin: "image-slice-parser",
             Declaration: function (decl) {
                 var _a, _b;
                 return __awaiter(this, void 0, void 0, function () {
-                    var _c, url_1, direction, isSep, slice, bgSize, filePath, err_1, fileHash, optionHash, oldCache, cacheOption, currentOption, bgs, bgsResource_1, _imgWidth, _imgHeight, _isRow, scale, cacheDimension, _options, _imgWidth_1, _imgHeight_1, _d, _bgsResource, _dimension, outputs, dimension, isRow, results, sliceArr, imgHeight, imgWidth, _loop_1, _i, results_1, result, e_1, localCss;
+                    var _c, url_1, direction, isSeparate, slice, bgSize, filePath, err_1, fileHash, optionHash, oldCache, cacheOption, currentOption, bgs, bgsResource_1, _imgWidth, _imgHeight, _isRow, scale, cacheDimension, _options, _imgWidth_1, _imgHeight_1, _d, _bgsResource, _dimension, outputs, dimension, isRow, results, sliceArr, imgHeight, imgWidth, _loop_1, _i, results_1, result, e_1, localCss;
                     var _e;
                     return __generator(this, function (_f) {
                         switch (_f.label) {
                             case 0:
                                 if (!(decl.prop === property)) return [3 /*break*/, 12];
-                                _c = util_2.parseProperty(decl.value), url_1 = _c.url, direction = _c.direction, isSep = _c.isSep, slice = _c.slice, bgSize = _c.bgSize;
+                                _c = util_2.parseProperty(decl.value), url_1 = _c.url, direction = _c.direction, isSeparate = _c.isSeparate, slice = _c.slice, bgSize = _c.bgSize;
                                 if (!url_1)
                                     return [2 /*return*/];
                                 filePath = void 0;
@@ -238,14 +237,14 @@ exports.default = (function (_a) {
                                 });
                                 localCss = template({
                                     bgs: bgs,
-                                    isSep: isSep,
+                                    isSeparate: isSeparate,
                                     selector: decl.parent.selector,
                                     bgWidth: _imgWidth * scale,
                                     bgHeight: _imgHeight * scale,
                                     imgWidth: _imgWidth,
                                     imgHeight: _imgHeight,
                                 });
-                                if (isSep) {
+                                if (isSeparate) {
                                     decl.parent.after(localCss);
                                 }
                                 else {
