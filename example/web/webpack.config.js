@@ -32,8 +32,8 @@ module.exports = {
             loader: "image-slice-loader",
             options: {
               outputPath: "@assets/slice",
-              template: ({ bgs, bgWidth, bgHeight, isSep, selector }) => {
-                if (isSep) {
+              template: ({ bgs, bgWidth, bgHeight, isSeparate, selector }) => {
+                if (isSeparate) {
                   return `${selector} .img {
                     background-repeat: no-repeat;
                     background-position: center;

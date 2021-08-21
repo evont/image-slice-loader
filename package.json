@@ -8,8 +8,7 @@
   },
   "scripts": {
     "start": "tsc -w",
-    "build": "tsc",
-    "test:cli": "image-slice"
+    "build": "tsc"
   },
   "files": [
     "dist"
