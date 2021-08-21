@@ -11,11 +11,6 @@ module.exports = {
     publicPath: "./",
     assetModuleFilename: "images/[hash][ext][query]",
   },
-  resolveLoader: {
-    alias: {
-      "image-slice-loader": path.resolve(__dirname, "../../dist"),
-    },
-  },
   resolve: {
     alias: {
       "@assets": path.resolve("./src/assets"),

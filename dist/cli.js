@@ -96,8 +96,10 @@ function exec(_a) {
                 }
             }];
     }
+    if (!options)
+        throw new Error('Please pass a json path or a image path');
     options = formateOption(options);
-    output = handlePath(output);
+    output = handlePath(output || "./slice");
     fs.ensureDirSync(output);
     index_1.sharps(options).forEach(function (result) {
         var dimension = result.dimension, image = result.image, tasks = result.tasks;

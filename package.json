@@ -4,11 +4,12 @@
   "description": "a loader to slice long image & generate css background",
   "main": "dist/index.js",
   "bin": {
-    "image-slice": "./dist/cli"
+    "image-slice": "./dist/cli.js"
   },
   "scripts": {
     "start": "tsc -w",
-    "build": "tsc"
+    "build": "tsc",
+    "test:cli": "image-slice"
   },
   "files": [
     "dist"

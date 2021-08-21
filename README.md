@@ -124,19 +124,19 @@ interface BgType {
   height: number;
   width: number;
   index: number;
-  url: string;
-  isRow: boolean;
+  url: string; // image url
+  isRow: boolean; // determine image direction is in row or in column direction
 }
 
 // template function accept a data as follow structure
 type template = (data: {
-  bgs: BgType[];
-  isSeparate: boolean;
-  selector: string;
-  bgWidth: number;
-  bgHeight: number;
-  imgWidth: number;
-  imgHeight: number;
+  bgs: BgType[]; // sliced images list 
+  isSeparate: boolean; // whether is inside the selctor or seperated
+  selector: string; // current selector that you use the property defined previously
+  bgWidth: number; // background width that converted based on the backgroudn size
+  bgHeight: number; // background height that converted based on the backgroudn size
+  imgWidth: number; // origin image width
+  imgHeight: number; // origin image height
 }) => string;
 ```
 
@@ -144,6 +144,8 @@ type template = (data: {
 
 You can use it in your node.js service, upload some long image and slice it to store in your own way, here is some [Example](https://github.com/evont/image-slice-loader/tree/main/example/server)
 
+`sharps`: you can pass some images with slice option and handle them in your own way;
+`outputSharp`: this is more effiective if you just want to slice images and output them;
 
 ```javascript
 const { outputSharp, sharps } = require("image-slice-loader");
@@ -192,6 +194,16 @@ dealImages();
 
 ### **As a cli**
 
-You can run `image-slice -i ./yourimage -s 200, 200 -d column -o ./yououput` or `image-slice -j someimagesInfo.json`
+You can run `image-slice -i ./yourimage -s 200, 200 -d column -o ./yououput` or `image-slice -j someimagesInfo.json` to generate your slices
 
 here is some [Example](https://github.com/evont/image-slice-loader/tree/main/example/bin)
+
+Available params: 
+```sh
+  -i, --image [type]        image to be sliced
+  -d, --direction [type]    direction
+  -s, --slice [numbers...]  slice size
+  -o, --output [type]       output path for image
+  -j, --json [type]         image json file
+  -h, --help                display help for command
+```

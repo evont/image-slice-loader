@@ -51,8 +51,9 @@ function exec({ image, direction, slice, json, output }) {
       }
     }]
   }
+  if (!options) throw new Error('Please pass a json path or a image path')
   options = formateOption(options);
-  output = handlePath(output);
+  output = handlePath(output || "./slice");
   fs.ensureDirSync(output);
 
   sharps(options).forEach((result) => {
