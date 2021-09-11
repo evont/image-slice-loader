@@ -1,6 +1,6 @@
 {
   "name": "@cafune/image-slice-loader",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "a loader to slice long image & generate css background",
   "main": "dist/index.js",
   "bin": {
